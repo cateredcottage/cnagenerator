@@ -42,6 +42,7 @@
       padding:14px 16px;
       display:flex; align-items:center; justify-content:space-between;
       gap:14px; flex-wrap:wrap;
+      position:relative;
     }
     .brand{ display:flex; align-items:center; gap:12px; color:#fff; min-width:280px; }
     .brand .logoWrap{
@@ -125,6 +126,19 @@
       box-shadow: 0 12px 26px rgba(37,99,235,.22);
     }
     button.ghost{ background: rgba(15,23,42,.04); }
+    button.danger,
+    #coverageClear{
+      background: rgba(220,38,38,.10);
+      border: 1px solid rgba(220,38,38,.45);
+      color: rgba(185,28,28,1);
+    }
+    button.danger:hover:not(:disabled),
+    #coverageClear:hover:not(:disabled){ background: rgba(220,38,38,.16); }
+    button.danger:active:not(:disabled),
+    #coverageClear:active:not(:disabled){ transform: translateY(1px); }
+    button.danger:disabled,
+    #coverageClear:disabled{ opacity:.55; }
+
     button:disabled{ opacity:.55; cursor:not-allowed; }
     .pillBtn{
       padding:8px 10px; border-radius:999px;
@@ -310,6 +324,23 @@
     }
     .toast.show{ opacity:1; transform: translateX(-50%) translateY(-4px); }
 
+
+    /* Print helpers */
+    .printOnly{ display:none; }
+    .roomChecklist{ margin-top:10px; }
+    .roomChecklistTitle{ font-size:12px; font-weight:800; margin-bottom:6px; }
+    .roomChecklistGrid{
+      display:grid;
+      grid-template-columns: repeat(6, minmax(0,1fr));
+      gap:6px 10px;
+      font-size:12px;
+      line-height:1.2;
+    }
+    .rcItem{ display:flex; align-items:center; gap:6px; }
+    .rcBox{ width:12px; height:12px; border:1px solid #000; display:inline-block; }
+    .rcNum{ font-weight:700; }
+
+
     /* Print */
     #printHeader{ display:none; padding:12px 0 10px; border-bottom:2px solid #000; margin-bottom:10px; }
     #printHeader .phTop{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -321,6 +352,12 @@
     #printHeader .phRight{ text-align:right; font-size:12px; color:#111; line-height:1.3; white-space:nowrap; }
 
     @media print{
+      .printOnly{ display:block !important; }
+      .cnaDetails{ display:block !important; }
+      body.printNoDetails .cnaDetails{ display:none !important; }
+      .cnaBox.compact .cnaDetails{ display:block !important; }
+      body.printNoDetails .cnaDetails{ display:none !important; }
+
       .topbar, .controls, .leftCol, .copyBar, .tiny, .toast { display:none !important; }
       body{ background:#fff !important; color:#000 !important; }
       .wrap{ padding:0 !important; max-width:none !important; }
@@ -438,6 +475,168 @@
     .cnaSummary{ color:var(--muted); font-size:12px; margin-top:8px; }
     .cnaBox.compact .cnaDetails{ display:none; }
     .cnaBox.compact.open .cnaDetails{ display:block; }
+    /* Allow collapsing CNA room details on desktop too */
+    .cnaBox:not(.open) .cnaDetails{ display:none; }
+
+
+
+/* Mobile: collapse the top stat chips to save space */
+.top-chips-details { margin-top: 10px; }
+.top-chips-summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.92);
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+.top-chips-summary::-webkit-details-marker { display: none; }
+.top-chips-summary .icon { font-size: 16px; line-height: 1; }
+.top-chips-summary .label { letter-spacing: 0.2px; }
+
+/* On larger screens, keep chips always visible and hide the summary toggle */
+@media (min-width: 761px){
+  .top-chips-summary { display: none; }
+  .top-chips-details { display: block; }
+}
+
+/* When collapsed, add a bit more breathing room below header */
+@media (max-width: 760px){
+  /* Put the toggle on the top-right so it doesn't take a full row */
+  .top-chips-summary{
+    position:absolute;
+    right:16px;
+    top:14px;
+    padding:8px 10px;
+    gap:8px;
+  }
+  .top-chips-summary .label{ display:none; } /* icon-only on mobile */
+  .top-chips-details{ margin-top:0; }
+  .top-chips-details:not([open]) { margin-bottom: 10px; }
+  .top-chips-details[open] .chips { margin-top: 10px; }
+}
+
+
+/* ===== Sticky action bar (mobile) ===== */
+@media (max-width: 760px){
+  body{ padding-bottom: 74px; }
+  #stickyActionBar{
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    z-index: 9999;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 18px;
+    box-shadow: 0 12px 35px rgba(2,6,23,.18);
+    padding: 10px;
+    backdrop-filter: blur(10px);
+  }
+  #stickyActionBar .barRow{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+  }
+  #stickyActionBar button{
+    flex: 1 1 0;
+    padding: 12px 12px;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+  #stickyActionBar .primary{
+    background:#2563eb;
+    color:#fff;
+    border:1px solid rgba(37,99,235,.35);
+  }
+  #stickyActionBar .ghost{
+    background:rgba(15,23,42,.04);
+    border:1px solid rgba(15,23,42,.12);
+  }
+}
+
+
+/* ===== CNA lock button ===== */
+.lockBtn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(15,23,42,.14);
+  background:rgba(15,23,42,.04);
+  font-size:12px;
+  cursor:pointer;
+  user-select:none;
+}
+.lockBtn.locked{
+  background:rgba(34,197,94,.12);
+  border-color:rgba(34,197,94,.35);
+}
+.lockBtn .icon{ font-size:14px; }
+
+
+/* =========================
+   CLEAN PRINT LAYOUT
+   ========================= */
+@media print {
+
+  hr,
+  .signature-line,
+  .print-divider {
+    display: none !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .cna-card {
+    page-break-inside: avoid;
+    margin-bottom: 10px !important;
+  }
+
+  h1, h2, h3 {
+    margin-bottom: 6px !important;
+  }
+
+  p {
+    margin: 3px 0 !important;
+  }
+
+  button,
+  .no-print,
+  .controls,
+  .sticky-bar {
+    display: none !important;
+  }
+
+  .container {
+    max-width: 100%;
+    padding: 0 10px;
+  }
+}
+
+
+/* FORCE REMOVE ANY LEFTOVER PRINT LINES */
+@media print {
+  hr,
+  [class*="signature"],
+  [class*="divider"],
+  div[style*="border-top"],
+  div[style*="border-bottom"] {
+    display: none !important;
+    border: none !important;
+  }
+}
 
 </style>
 </head>
@@ -539,7 +738,11 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
         </div>
       </div>
 
-      <div class="chips" aria-live="polite">
+      <details id="topChipsDetails" class="top-chips-details" open>
+        <summary id="topChipsSummary" class="top-chips-summary" aria-label="Toggle shift stats">
+          <span class="icon">📊</span><span class="label">Shift Stats</span>
+        </summary>
+<div class="chips" aria-live="polite">
         <div class="chip">Census: <strong id="chipCensus">0</strong></div>
         <div class="chip">CNA Workload: <strong id="chipWorkload">0</strong></div>
         <div class="chip chipOBS" id="chipOBSWrap" title="Tap to filter rooms with observation beds">On Observation: <strong id="chipObs">0</strong></div>
@@ -650,6 +853,9 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
               <option value="soft">Fairness B: Soft (allow +1 to keep closer)</option>
             </select>
             <button id="applyCoverage" class="ghost" disabled>Apply</button>
+            <button id="coverageUndo" class="ghost" disabled>Undo</button>
+            <button id="coverageRedo" class="ghost" disabled>Redo</button>
+            <button id="coverageClear" class="danger" disabled>Clear Coverage</button>
           </div>
           <div class="helper">Use this after you already generated assignments. It removes that CNA and fairly spreads their workload to the others (or reshuffles).</div>
         </div>
@@ -674,6 +880,15 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
               <input id="onePerPage" type="checkbox" style="width:18px;height:18px;" />
               One CNA per page
             </label>
+            <input id="printRoomList" type="checkbox" style="display:none" />
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#0f172a;">
+              <input id="printDetails" type="checkbox" checked style="width:18px;height:18px;" />
+              Print CNA room details (Room X: beds)
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#0f172a;">
+              <input id="detailsDefault" type="checkbox" checked style="width:18px;height:18px;" />
+              Show Details by default (mobile)
+            </label>
           </div>
           <div class="helper">Good for handing assignments to staff.</div>
         </div>
@@ -695,7 +910,9 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
           <label>Legend</label>
           <div class="helper">AO = All Occupied • AE = All Empty • AObs = All Observation • AAdm = All Pending Admission • AOHP = All Out to Hospital</div>
         </div>
-      </div>
+      
+      </details>
+</div>
 
       <div class="main">
         <div class="split">
@@ -785,6 +1002,7 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
                     </label>
                     <button id="copyAllBtn" class="tiny primary" disabled>Copy All</button>
                     <button id="copyAllWordBtn" class="tiny" disabled>Copy All (Word)</button>
+                    <button id="toggleAllDetailsBtn" class="tiny" disabled>Expand all</button>
                     <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">
                       <input id="copyPageBreaks" type="checkbox" style="width:16px;height:16px;">
                       Add page breaks for Word
@@ -1097,6 +1315,9 @@ function saveState(){
         onePerPage: !!(get("onePerPage") && get("onePerPage").checked),
         copyIncludeObs: !!(get("copyIncludeObs") && get("copyIncludeObs").checked),
         copyPageBreaks: !!(get("copyPageBreaks") && get("copyPageBreaks").checked),
+        printRoomList: !!(get("printRoomList") && get("printRoomList").checked),
+        printDetails: !!(get("printDetails") && get("printDetails").checked),
+        detailsDefault: !!(get("detailsDefault") && get("detailsDefault").checked),
         selectedRoom: selectedRoom
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1150,7 +1371,9 @@ function saveState(){
 
     get("copyAllBtn").disabled = true;
     get("copyObsBtn").disabled = true;
+    get("copyHospBtn").disabled = true;
     get("copyAllWordBtn").disabled = true;
+    if(get("toggleAllDetailsBtn")) get("toggleAllDetailsBtn").disabled = true;
     renderHospList();
   }
 
@@ -1200,6 +1423,18 @@ function saveState(){
     for (var i=0;i<ALL_ROOMS.length;i++){
       var r = ALL_ROOMS[i];
       if (roomMatchesFilter(r, mode)) rooms.push(r);
+    }
+
+    
+    // If a saved filter results in zero rooms, fall back to showing all rooms (prevents "blank rooms" confusion).
+    if (rooms.length === 0 && mode !== "all"){
+      try { get("filterMode").value = "all"; } catch(e){}
+      mode = "all";
+      for (var k=0;k<ALL_ROOMS.length;k++){
+        var rr = ALL_ROOMS[k];
+        if (roomMatchesFilter(rr, mode)) rooms.push(rr);
+      }
+      saveState();
     }
 
     if (rooms.indexOf(selectedRoom) < 0 && rooms.length) selectedRoom = rooms[0];
@@ -1265,10 +1500,73 @@ function saveState(){
   }
 
   var lastAssignments = null;
+
+  // ===== CNA Locking (keep assignments while regenerating) =====
+  var cnaLocks = {}; // idx -> true/false
+  var lockedBedsByCna = {}; // idx -> [bed,...]
+
+  function isLocked(idx){ return !!cnaLocks[idx]; }
+
+  function getCurrentBedsForCna(idx){
+    try{
+      if (lastAssignments && lastAssignments[idx] && lastAssignments[idx].beds) return lastAssignments[idx].beds.slice();
+    }catch(e){}
+    return [];
+  }
+
+  function toggleCnaLock(idx){
+    idx = parseInt(idx,10);
+    if (isNaN(idx)) return;
+    if (!cnaLocks[idx]){
+      // lock: snapshot current beds
+      cnaLocks[idx] = true;
+      lockedBedsByCna[idx] = getCurrentBedsForCna(idx);
+    }else{
+      // unlock
+      cnaLocks[idx] = false;
+      lockedBedsByCna[idx] = [];
+    }
+    // Update UI
+    updateLockButtons();
+  }
+
+  function clearAllLocks(){
+    cnaLocks = {};
+    lockedBedsByCna = {};
+    updateLockButtons();
+  }
+
+  function updateLockButtons(){
+    try{
+      var btns = document.querySelectorAll(".lockBtn[data-idx]");
+      for (var i=0;i<btns.length;i++){
+        var b = btns[i];
+        var idx = parseInt(b.getAttribute("data-idx"),10);
+        var locked = isLocked(idx);
+        if (locked){ b.classList.add("locked"); b.querySelector(".icon").textContent = "🔒"; b.querySelector(".txt").textContent = "Locked"; }
+        else { b.classList.remove("locked"); b.querySelector(".icon").textContent = "🔓"; b.querySelector(".txt").textContent = "Lock"; }
+      }
+    }catch(e){}
+  }
+
+  function lockedBedsSet(){
+    var set = {};
+    for (var k in lockedBedsByCna){
+      if (!lockedBedsByCna.hasOwnProperty(k)) continue;
+      var arr = lockedBedsByCna[k] || [];
+      for (var i=0;i<arr.length;i++) set[arr[i]] = true;
+    }
+    return set;
+  }
+
   var lastWorkloadSnapshot = null;
   var lastLabels = null;
   var cnaCardOpen = [];
   var lastNote = "";
+
+  // Coverage-change undo/redo history (separate from census undo/redo)
+  var coverageHist = [];
+  var coveragePtr = -1;
   function renderRoomEditor(){
     var title = get("roomEditorTitle");
     var body = get("roomEditorBody");
@@ -1437,6 +1735,25 @@ function saveState(){
     return beds[0] + " → " + beds[beds.length - 1];
   }
 
+  
+  function buildRoomChecklistHTML(){
+    // Room # checklist for paper handoffs
+    var html = '<div class="printOnly roomChecklist">';
+    html += '<div class="roomChecklistTitle">Room list</div>';
+    html += '<div class="roomChecklistGrid">';
+    for (var i=0;i<ALL_ROOMS.length;i++){
+      var r = ALL_ROOMS[i];
+      html += '<span class="rcItem"><span class="rcBox"></span><span class="rcNum">' + r + '</span></span>';
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  function isPrintRoomListOn(){
+    var el = get("printRoomList");
+    return !!(el && el.checked);
+  }
+
   function renderAssignments(assignments, labels, note){
     lastAssignments = assignments;
     lastLabels = labels;
@@ -1462,9 +1779,11 @@ function saveState(){
         div.className = "box cnaBox";
         var compact = (window.innerWidth || 0) < 760;
         div.classList.toggle("compact", compact);
-        var isOpen = !!cnaCardOpen[idx];
-        // Default: open on desktop, collapsed on mobile unless user opened it
-        if (!compact) isOpen = true;
+        // Open/closed state is controlled by the user's per-card toggle (if any),
+        // otherwise by the global default (Details default).
+        var hasUser = (cnaCardOpen[idx] !== undefined && cnaCardOpen[idx] !== null);
+        var defOpen = !!(get("detailsDefault") && get("detailsDefault").checked);
+        var isOpen = hasUser ? !!cnaCardOpen[idx] : defOpen;
         div.classList.toggle("open", isOpen);
 
         var head = document.createElement("div");
@@ -1493,14 +1812,27 @@ function saveState(){
         headRight.appendChild(copyBtn);
 
 
-        var toggleBtn = document.createElement("button");
+        
+
+        var lockBtn = document.createElement("button");
+        lockBtn.className = "lockBtn";
+        lockBtn.setAttribute("data-idx", String(idx));
+        lockBtn.innerHTML = '<span class="icon">🔓</span><span class="txt">Lock</span>';
+        lockBtn.addEventListener("click", function(e){
+          e.preventDefault(); e.stopPropagation();
+          toggleCnaLock(idx);
+        });
+        headRight.appendChild(lockBtn);
+var toggleBtn = document.createElement("button");
         toggleBtn.className = "cnaToggle";
         toggleBtn.innerHTML = '<span class="car">▾</span><span class="txt">Details</span>';
         // Set initial label
         (function(){
-          var compactNow = (window.innerWidth || 0) < 760;
-          if (!compactNow){ toggleBtn.style.display = "none"; return; }
-          var openNow = !!cnaCardOpen[idx];
+          // Show the Details toggle on all screen sizes.
+          var hasUser = (cnaCardOpen[idx] !== undefined && cnaCardOpen[idx] !== null);
+          var defOpen = !!(get("detailsDefault") && get("detailsDefault").checked);
+          // If the user has explicitly toggled this card before, respect that; otherwise use the default.
+          var openNow = hasUser ? !!cnaCardOpen[idx] : defOpen;
           toggleBtn.querySelector('.car').textContent = openNow ? '▴' : '▾';
           toggleBtn.querySelector('.txt').textContent = openNow ? 'Hide' : 'Details';
         })();
@@ -1555,11 +1887,50 @@ function saveState(){
 
         rows.appendChild(details);
 
+        if (isPrintRoomListOn()){
+          var rl = document.createElement("div");
+          rl.innerHTML = buildRoomChecklistHTML();
+          // buildRoomChecklistHTML returns a wrapper div; append its first child
+          if (rl.firstChild) rows.appendChild(rl.firstChild);
+        }
+
         div.appendChild(head);
         div.appendChild(rows);
         box.appendChild(div);
       })(assignments[i], i);
     }
+    updateToggleAllDetailsButton();
+  }
+
+  function computeAllDetailsOpen(){
+    if(!lastAssignments || !Array.isArray(lastAssignments)) return null;
+    var defOpen = !!(get("detailsDefault") && get("detailsDefault").checked);
+    for(var i=0;i<lastAssignments.length;i++){
+      var hasUser = (cnaCardOpen[i] !== undefined && cnaCardOpen[i] !== null);
+      var openNow = hasUser ? !!cnaCardOpen[i] : defOpen;
+      if(!openNow) return false;
+    }
+    return true;
+  }
+
+  function updateToggleAllDetailsButton(){
+    var btn = get("toggleAllDetailsBtn");
+    if(!btn) return;
+    if(!lastAssignments){ btn.style.display = "none"; return; }
+    btn.style.display = "";
+    var allOpen = computeAllDetailsOpen();
+    btn.textContent = (allOpen === true) ? "Collapse all" : "Expand all";
+  }
+
+  function toggleAllDetails(){
+    // Works on both mobile and desktop
+    if(!lastAssignments) return;
+    var allOpen = computeAllDetailsOpen();
+    var target = (allOpen === true) ? false : true;
+    cnaCardOpen = [];
+    for(var i=0;i<lastAssignments.length;i++) cnaCardOpen[i] = target;
+    saveState();
+    renderAssignments(lastAssignments, lastLabels, lastNote);
   }
 
   function renderObsSummary(){
@@ -1638,6 +2009,10 @@ function saveState(){
 
     // Display with commas (not pills) so it is always readable on mobile
     host.textContent = beds.length ? beds.join(", ") : "—";
+
+    var btn = get("copyHospBtn");
+    if (btn) btn.disabled = (beds.length === 0);
+
   }
 
   function copyHospOnly(){
@@ -1873,11 +2248,15 @@ function saveState(){
     lastAssignments = assignments;
     lastWorkloadSnapshot = workloadBeds;
 
+    // Reset coverage-change history whenever we generate/shuffle
+    initCoverageHistory();
+
     get("shuffleAgain").disabled = false;
     get("printBtn").disabled = false;
     get("copyAllBtn").disabled = false;
     get("copyObsBtn").disabled = false;
     get("copyAllWordBtn").disabled = false;
+    if(get("toggleAllDetailsBtn")) get("toggleAllDetailsBtn").disabled = false;
 
     refreshCoverageControls();
     updatePrintHeaderMeta();
@@ -2275,6 +2654,9 @@ function saveState(){
     if (cur) sel.value = cur;
 
     btn.disabled = !lastAssignments;
+
+    // Keep coverage undo/redo buttons in sync
+    updateCoverageHistoryUI();
   }
 
   function recalcLoadStats(assignments){
@@ -2291,6 +2673,66 @@ function saveState(){
       out.push({ patients: as[i].patients, beds: (as[i].beds || []).slice() });
     }
     return out;
+  }
+
+
+  function snapshotCoverageState(noteOverride){
+    return {
+      assignments: lastAssignments ? cloneAssignments(lastAssignments) : null,
+      labels: Array.isArray(lastLabels) ? lastLabels.slice() : null,
+      note: (typeof noteOverride === "string") ? noteOverride : (lastNote || "")
+    };
+  }
+
+  function initCoverageHistory(){
+    // Start history from the current generated assignments
+    if (!lastAssignments){ coverageHist = []; coveragePtr = -1; updateCoverageHistoryUI(); return; }
+    coverageHist = [ snapshotCoverageState() ];
+    coveragePtr = 0;
+    updateCoverageHistoryUI();
+  }
+
+  function pushCoverageHistory(nextNote){
+    if (!lastAssignments) return;
+    var snap = snapshotCoverageState(nextNote);
+    // Trim any redo states
+    if (coveragePtr < coverageHist.length - 1){
+      coverageHist = coverageHist.slice(0, coveragePtr + 1);
+    }
+    coverageHist.push(snap);
+    coveragePtr = coverageHist.length - 1;
+    updateCoverageHistoryUI();
+  }
+
+  function restoreCoverageAt(ptr){
+    if (ptr < 0 || ptr >= coverageHist.length) return;
+    var snap = coverageHist[ptr];
+    if (!snap || !snap.assignments) return;
+    lastAssignments = cloneAssignments(snap.assignments);
+    lastLabels = Array.isArray(snap.labels) ? snap.labels.slice() : null;
+    lastNote = snap.note || "";
+    renderAssignments(lastAssignments, lastLabels, lastNote);
+    recalcLoadStats(lastAssignments);
+    renderObsSummary();
+    refreshCoverageControls();
+    // keep copy/print enabled
+    get("printBtn").disabled = false;
+    get("copyAllBtn").disabled = false;
+    get("copyObsBtn").disabled = false;
+    get("copyAllWordBtn").disabled = false;
+    if(get("toggleAllDetailsBtn")) get("toggleAllDetailsBtn").disabled = false;
+    updateCoverageHistoryUI();
+  }
+
+  function updateCoverageHistoryUI(){
+    var u = get("coverageUndo");
+    var r = get("coverageRedo");
+    var c = get("coverageClear");
+    if (!u || !r || !c) return;
+    var has = (coverageHist && coverageHist.length && coveragePtr >= 0);
+    u.disabled = !(has && coveragePtr > 0);
+    r.disabled = !(has && coveragePtr < coverageHist.length - 1);
+    c.disabled = !(has && coveragePtr > 0); // only meaningful if changed from baseline
   }
 
   
@@ -2547,6 +2989,7 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
 
   get("copyAllBtn").addEventListener("click", copyAll);
   get("copyAllWordBtn").addEventListener("click", copyAllForWord);
+  if(get("toggleAllDetailsBtn")) get("toggleAllDetailsBtn").addEventListener("click", toggleAllDetails);
   get("copyObsBtn").addEventListener("click", copyObsOnly);
   get("copyHospBtn").addEventListener("click", copyHospOnly);
 
@@ -2563,11 +3006,19 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
     var res = redistributeAfterCnaLeaves(absentIdx, mode, keepClose, fairnessMode);
     if (!res){ toast("Cannot redistribute"); return; }
 
+    // Ensure history exists
+    if (!coverageHist || coveragePtr < 0){ initCoverageHistory(); }
+
     // Apply
     lastAssignments = res.assignments;
     // Keep lastWorkloadSnapshot unchanged (same bed pool), but CNA count effectively reduced.
+    lastLabels = res.labels;
+    lastNote = res.note || "";
     renderAssignments(res.assignments, res.labels, res.note);
     recalcLoadStats(res.assignments);
+
+    // Add to coverage history
+    pushCoverageHistory(lastNote);
 
     get("printBtn").disabled = false;
     get("copyAllBtn").disabled = false;
@@ -2576,6 +3027,30 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
 
     toast("Coverage updated");
   });
+
+  if (get("coverageUndo")) get("coverageUndo").addEventListener("click", function(){
+    if (!coverageHist || coveragePtr <= 0) return;
+    coveragePtr -= 1;
+    restoreCoverageAt(coveragePtr);
+    toast("Coverage undo");
+  });
+
+  if (get("coverageRedo")) get("coverageRedo").addEventListener("click", function(){
+    if (!coverageHist || coveragePtr >= coverageHist.length - 1) return;
+    coveragePtr += 1;
+    restoreCoverageAt(coveragePtr);
+    toast("Coverage redo");
+  });
+
+  if (get("coverageClear")) get("coverageClear").addEventListener("click", function(){
+    if (!coverageHist || coveragePtr <= 0) return;
+    var ok = confirm("Clear coverage changes and go back to the last generated assignments?");
+    if (!ok) return;
+    coveragePtr = 0;
+    restoreCoverageAt(coveragePtr);
+    toast("Coverage cleared");
+  });
+
 
 
   get("copyIncludeObs").addEventListener("change", saveState);
@@ -2591,6 +3066,10 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
   get("printDate").addEventListener("change", saveState);
   get("printShift").addEventListener("change", saveState);
   get("onePerPage").addEventListener("change", function(){ syncOnePerPage(); saveState(); });
+  get("printRoomList").addEventListener("change", function(){
+    if (lastAssignments){ renderAssignments(lastAssignments, lastLabels, lastNote); renderObsSummary(); }
+    saveState();
+  });
 
   // Global legend buttons
   get("legendAO").addEventListener("click", function(){
@@ -2651,6 +3130,36 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
     if (saved && typeof saved.onePerPage === "boolean") get("onePerPage").checked = saved.onePerPage;
     syncOnePerPage();
 
+    // Print room list (default ON)
+    if (saved && typeof saved.printRoomList === "boolean") get("printRoomList").checked = saved.printRoomList;
+    else get("printRoomList").checked = true;
+
+    // Print CNA room details (default ON)
+    if (saved && typeof saved.printDetails === "boolean") get("printDetails").checked = saved.printDetails;
+    else get("printDetails").checked = true;
+
+    // Show Details by default on mobile (default ON)
+    if (saved && typeof saved.detailsDefault === "boolean") get("detailsDefault").checked = saved.detailsDefault;
+    else get("detailsDefault").checked = true;
+
+    function syncPrintDetails(){
+      var off = !(get("printDetails") && get("printDetails").checked);
+      document.body.classList.toggle("printNoDetails", off);
+    }
+    syncPrintDetails();
+
+    get("printDetails").addEventListener("change", function(){ syncPrintDetails(); saveState(); });
+    get("detailsDefault").addEventListener("change", function(){
+      // Reset per-card overrides so the new default applies everywhere
+      cnaCardOpen = [];
+      saveState();
+      if (lastAssignments) renderAssignments(lastAssignments, lastLabels, lastNote);
+    });
+
+    // Ensure correct class right before printing
+    window.addEventListener("beforeprint", syncPrintDetails);
+
+
     if (saved && typeof saved.copyIncludeObs === "boolean") get("copyIncludeObs").checked = saved.copyIncludeObs;
     if (saved && typeof saved.copyPageBreaks === "boolean") get("copyPageBreaks").checked = saved.copyPageBreaks;
 
@@ -2664,14 +3173,85 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
 
 })();
 </script>
+<script>
+(function(){
+  function isMobile(){ return window.matchMedia && window.matchMedia('(max-width: 760px)').matches; }
 
-<div id="printSignatureSection" class="printOnly" style="display:none;margin-top:40px;">
+  function initTopChipsAutoCollapse(){
+    var d = document.getElementById('topChipsDetails');
+    var s = document.getElementById('topChipsSummary');
+    if (!d || !s) return;
+
+    // Keep the label simple and always visible.
+    var label = s.querySelector('.label');
+    if (label) label.textContent = 'Shift Stats';
+
+    // Default: show stats at the very top. We'll auto-collapse once the user scrolls down.
+    d.setAttribute('open','');
+
+    // If the page loads already scrolled, collapse immediately on mobile.
+    if (isMobile() && window.scrollY > 60) d.removeAttribute('open');
+
+    // Smart hide/show on scroll (mobile only):
+    // - scrolling down past 80px => collapse
+    // - scrolling up => expand (even if not back to the top)
+    var lastY = window.scrollY || 0;
+    var ticking = false;
+
+    function apply(){
+      ticking = false;
+      if (!isMobile()) {
+        // Desktop: always open
+        d.setAttribute('open','');
+        lastY = window.scrollY || 0;
+        return;
+      }
+
+      var y = window.scrollY || 0;
+      var delta = y - lastY;
+
+      // Ignore tiny scroll jitter (iOS address bar etc.)
+      if (Math.abs(delta) < 8) return;
+
+      if (delta > 0) {
+        // Scrolling down: once you scroll past the threshold, collapse.
+        if (y > 80) d.removeAttribute('open');
+      }
+      // Scrolling up does NOT auto-expand; use the Shift Stats button to expand.
+
+      lastY = y;
+    }
+
+    window.addEventListener('scroll', function(){
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(apply);
+    }, {passive:true});
+
+    // If the user rotates/resizes across the breakpoint, normalize state.
+    var lastMobile = isMobile();
+    window.addEventListener('resize', function(){
+      var nowMobile = isMobile();
+      if (nowMobile === lastMobile) return;
+      lastMobile = nowMobile;
+      if (!nowMobile) d.setAttribute('open','');
+      else {
+        // Entering mobile: if already scrolled down, collapse; otherwise keep current state.
+        if (window.scrollY > 60) d.removeAttribute('open');
+      }
+    }, {passive:true});
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initTopChipsAutoCollapse);
+  } else {
+    initTopChipsAutoCollapse();
+  }
+})();
+</script>
+</div>
   <div style="margin-top:30px;">
-    <strong>Charge Nurse:</strong>
-    <div style="border-bottom:1px solid #000;width:300px;margin-top:10px;"></div>
-  </div>
-  <div style="margin-top:30px;">
-    <strong>Supervisor:</strong>
+    <strong></strong>
     <div style="border-bottom:1px solid #000;width:300px;margin-top:10px;"></div>
   </div>
 </div>
@@ -2681,6 +3261,76 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
     Built, created & maintained by <strong>Arnold Deveney</strong>
     <span class="mini">Catered Cottage — CNA Assignment Generator</span>
   </footer>
+
+
+<script>
+/* Disable "Include full room list (Room # checklist)" feature without breaking the app */
+(function(){
+  function disableRoomChecklist(){
+    var cb = document.getElementById('printRoomList');
+    if (cb){ cb.checked = false; }
+    // If the original code uses a function, override it safely
+    try { window.isPrintRoomListOn = function(){ return false; }; } catch(e){}
+  }
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', disableRoomChecklist);
+  } else {
+    disableRoomChecklist();
+  }
+})();
+</script>
+
+
+<!-- Sticky action bar -->
+<div id="stickyActionBar" style="display:none">
+  <div class="barRow">
+    <button id="stickyGenerate" class="primary" type="button">Generate</button>
+    <button id="stickyShuffle" class="ghost" type="button">Shuffle</button>
+    <button id="stickyPrint" class="ghost" type="button">Print</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function isMobile(){ return window.matchMedia("(max-width:760px)").matches; }
+
+  function sync(){
+    var bar=$("stickyActionBar");
+    var gen=$("generate");
+    var shuf=$("shuffleAgain");
+    var prn=$("printBtn");
+    if(!bar||!gen||!shuf||!prn) return;
+
+    bar.style.display=isMobile()?"" :"none";
+
+    $("stickyGenerate").disabled=gen.disabled;
+    $("stickyShuffle").disabled=shuf.disabled;
+    $("stickyPrint").disabled=prn.disabled;
+  }
+
+  function wire(){
+    var gen=$("generate");
+    var shuf=$("shuffleAgain");
+    var prn=$("printBtn");
+
+    $("stickyGenerate").onclick=function(){gen.click();};
+    $("stickyShuffle").onclick=function(){shuf.click();};
+    $("stickyPrint").onclick=function(){prn.click();};
+
+    sync();
+    setInterval(sync,400);
+    window.addEventListener("resize",sync);
+    window.addEventListener("orientationchange",sync);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",wire);
+  }else{
+    wire();
+  }
+})();
+</script>
 
 </body>
 </html>
