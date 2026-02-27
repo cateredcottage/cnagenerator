@@ -563,19 +563,7 @@
 }
 
 
-/* ===== CNA lock button ===== */
-.lockBtn{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid rgba(15,23,42,.14);
-  background:rgba(15,23,42,.04);
-  font-size:12px;
-  cursor:pointer;
-  user-select:none;
-}
+
 .lockBtn.locked{
   background:rgba(34,197,94,.12);
   border-color:rgba(34,197,94,.35);
@@ -583,58 +571,29 @@
 .lockBtn .icon{ font-size:14px; }
 
 
-/* =========================
-   CLEAN PRINT LAYOUT
-   ========================= */
-@media print {
-
-  hr,
-  .signature-line,
-  .print-divider {
-    display: none !important;
-  }
-
-  body {
-    margin: 0;
-    padding: 0;
-  }
-
-  .cna-card {
-    page-break-inside: avoid;
-    margin-bottom: 10px !important;
-  }
-
-  h1, h2, h3 {
-    margin-bottom: 6px !important;
-  }
-
-  p {
-    margin: 3px 0 !important;
-  }
-
-  button,
-  .no-print,
-  .controls,
-  .sticky-bar {
-    display: none !important;
-  }
-
-  .container {
-    max-width: 100%;
-    padding: 0 10px;
-  }
+/* ===== Quick Swap Mode ===== */
+.swapActive .roomCard{
+  outline:2px dashed #2563eb;
+}
+.roomSelectable{
+  cursor:pointer;
+}
+.roomSelectable.swapSelected{
+  background:rgba(37,99,235,.12);
 }
 
 
-/* FORCE REMOVE ANY LEFTOVER PRINT LINES */
+/* ===== Print cleanup: hide interactive controls ===== */
 @media print {
-  hr,
-  [class*="signature"],
-  [class*="divider"],
-  div[style*="border-top"],
-  div[style*="border-bottom"] {
+  button,
+  .lockBtn,
+  #stickyActionBar,
+  #stickySwap,
+  [id^="sticky"],
+  .roomSelectable,
+  .no-print,
+  .controls {
     display: none !important;
-    border: none !important;
   }
 }
 
@@ -1501,56 +1460,7 @@ function saveState(){
 
   var lastAssignments = null;
 
-  // ===== CNA Locking (keep assignments while regenerating) =====
-  var cnaLocks = {}; // idx -> true/false
-  var lockedBedsByCna = {}; // idx -> [bed,...]
-
-  function isLocked(idx){ return !!cnaLocks[idx]; }
-
-  function getCurrentBedsForCna(idx){
-    try{
-      if (lastAssignments && lastAssignments[idx] && lastAssignments[idx].beds) return lastAssignments[idx].beds.slice();
-    }catch(e){}
-    return [];
-  }
-
-  function toggleCnaLock(idx){
-    idx = parseInt(idx,10);
-    if (isNaN(idx)) return;
-    if (!cnaLocks[idx]){
-      // lock: snapshot current beds
-      cnaLocks[idx] = true;
-      lockedBedsByCna[idx] = getCurrentBedsForCna(idx);
-    }else{
-      // unlock
-      cnaLocks[idx] = false;
-      lockedBedsByCna[idx] = [];
-    }
-    // Update UI
-    updateLockButtons();
-  }
-
-  function clearAllLocks(){
-    cnaLocks = {};
-    lockedBedsByCna = {};
-    updateLockButtons();
-  }
-
-  function updateLockButtons(){
-    try{
-      var btns = document.querySelectorAll(".lockBtn[data-idx]");
-      for (var i=0;i<btns.length;i++){
-        var b = btns[i];
-        var idx = parseInt(b.getAttribute("data-idx"),10);
-        var locked = isLocked(idx);
-        if (locked){ b.classList.add("locked"); b.querySelector(".icon").textContent = "🔒"; b.querySelector(".txt").textContent = "Locked"; }
-        else { b.classList.remove("locked"); b.querySelector(".icon").textContent = "🔓"; b.querySelector(".txt").textContent = "Lock"; }
-      }
-    }catch(e){}
-  }
-
-  function lockedBedsSet(){
-    var set = {};
+  ;
     for (var k in lockedBedsByCna){
       if (!lockedBedsByCna.hasOwnProperty(k)) continue;
       var arr = lockedBedsByCna[k] || [];
@@ -1810,19 +1720,6 @@ function saveState(){
 
         headRight.appendChild(tag);
         headRight.appendChild(copyBtn);
-
-
-        
-
-        var lockBtn = document.createElement("button");
-        lockBtn.className = "lockBtn";
-        lockBtn.setAttribute("data-idx", String(idx));
-        lockBtn.innerHTML = '<span class="icon">🔓</span><span class="txt">Lock</span>';
-        lockBtn.addEventListener("click", function(e){
-          e.preventDefault(); e.stopPropagation();
-          toggleCnaLock(idx);
-        });
-        headRight.appendChild(lockBtn);
 var toggleBtn = document.createElement("button");
         toggleBtn.className = "cnaToggle";
         toggleBtn.innerHTML = '<span class="car">▾</span><span class="txt">Details</span>';
@@ -3329,6 +3226,87 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
   }else{
     wire();
   }
+})();
+</script>
+
+
+<script>
+(function(){
+  var swapMode=false;
+  var firstBed=null;
+
+  function $(id){ return document.getElementById(id); }
+
+  function toggleSwap(){
+    swapMode=!swapMode;
+    document.body.classList.toggle("swapActive",swapMode);
+    firstBed=null;
+    updateSwapBtn();
+  }
+
+  function updateSwapBtn(){
+    var b=$("stickySwap");
+    if(!b) return;
+    b.textContent=swapMode?"Swap: ON":"Swap";
+  }
+
+  function attachRoomClicks(){
+    var rooms=document.querySelectorAll("[data-bed]");
+    rooms.forEach(function(el){
+      el.classList.add("roomSelectable");
+      el.onclick=function(){
+        if(!swapMode) return;
+        var bed=el.getAttribute("data-bed");
+        if(!firstBed){
+          firstBed=bed;
+          el.classList.add("swapSelected");
+        }else{
+          swapBeds(firstBed,bed);
+          clearSelections();
+        }
+      };
+    });
+  }
+
+  function clearSelections(){
+    firstBed=null;
+    document.querySelectorAll(".swapSelected").forEach(function(el){
+      el.classList.remove("swapSelected");
+    });
+  }
+
+  function swapBeds(a,b){
+    if(!window.lastAssignments) return;
+    var cnaA=null, idxA=null, cnaB=null, idxB=null;
+
+    for(var i=0;i<lastAssignments.length;i++){
+      var beds=lastAssignments[i].beds||[];
+      beds.forEach(function(v,j){
+        if(v==a){ cnaA=i; idxA=j; }
+        if(v==b){ cnaB=i; idxB=j; }
+      });
+    }
+    if(cnaA===null||cnaB===null) return;
+
+    var tmp=lastAssignments[cnaA].beds[idxA];
+    lastAssignments[cnaA].beds[idxA]=lastAssignments[cnaB].beds[idxB];
+    lastAssignments[cnaB].beds[idxB]=tmp;
+
+    if(typeof renderAssignments==="function") renderAssignments(lastAssignments);
+  }
+
+  document.addEventListener("DOMContentLoaded",function(){
+    var bar=document.getElementById("stickyActionBar");
+    if(bar){
+      var btn=document.createElement("button");
+      btn.id="stickySwap";
+      btn.className="ghost";
+      btn.textContent="Swap";
+      btn.onclick=toggleSwap;
+      bar.querySelector(".barRow").appendChild(btn);
+    }
+    setInterval(attachRoomClicks,1200);
+  });
 })();
 </script>
 
