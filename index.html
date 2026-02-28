@@ -127,13 +127,17 @@
     }
     button.ghost{ background: rgba(15,23,42,.04); }
     button.danger,
+    #coverageClear{
       background: rgba(220,38,38,.10);
       border: 1px solid rgba(220,38,38,.45);
       color: rgba(185,28,28,1);
     }
     button.danger:hover:not(:disabled),
+    #coverageClear:hover:not(:disabled){ background: rgba(220,38,38,.16); }
     button.danger:active:not(:disabled),
+    #coverageClear:active:not(:disabled){ transform: translateY(1px); }
     button.danger:disabled,
+    #coverageClear:disabled{ opacity:.55; }
 
     button:disabled{ opacity:.55; cursor:not-allowed; }
     .pillBtn{
@@ -791,7 +795,6 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
           <b>Catered Cottage Healthcare</b>
           <span>CNA Assignment Generator</span>
           <span class="byline">Built by Arnold Deveney</span>
-          <span class="byline" style="opacity:.75;">v3.1-2026-02-28</span>
         </div>
       </div>
 
@@ -896,7 +899,35 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
 
         
 
-        
+        <div>
+          <label>Coverage change (CNA leaves early)</label>
+          <div class="btnrow">
+            <select id="absentCna" style="min-width:160px;">
+              <option value="">Select CNA…</option>
+            </select>
+            <select id="coverageMode" style="min-width:240px;">
+              <option value="order">Redistribute in order (pairs, like dealing cards)</option>
+              <option value="least">Redistribute to least workload (more balanced)</option>
+              <option value="reshuffle">Full reshuffle (new assignments)</option>
+            </select>
+
+            <label style="display:flex;align-items:center;gap:8px;margin:0;padding:8px 10px;border-radius:14px;border:1px solid rgba(15,23,42,.12);background:rgba(15,23,42,.03);font-size:12px;color:var(--muted);">
+              <input id="keepClose" type="checkbox" checked style="width:auto;margin:0;"/>
+              Keep rooms close (prefer nearest rooms)
+            </label>
+
+            <select id="fairnessMode" style="min-width:220px;">
+              <option value="strict">Fairness A: Strict balance</option>
+              <option value="soft">Fairness B: Soft (allow +1 to keep closer)</option>
+            </select>
+            <button id="applyCoverage" class="ghost" disabled>Apply</button>
+            <button id="coverageUndo" class="ghost" disabled>Undo</button>
+            <button id="coverageRedo" class="ghost" disabled>Redo</button>
+            <button id="coverageClear" class="danger" disabled>Clear Coverage</button>
+          </div>
+          <div class="helper">Use this after you already generated assignments. It removes that CNA and fairly spreads their workload to the others (or reshuffles).</div>
+        </div>
+
 <div>
           <label>Print header fields</label>
           <div class="btnrow">
@@ -1101,8 +1132,6 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
 
 <script>
 (function(){
-  const APP_VERSION = "v3.1-2026-02-28";
-  console.log("App version:", APP_VERSION, "build:20260228230515");
   // --- Compatibility helpers (no optional chaining) ---
   function safeParseJSON(s){ try { return JSON.parse(s); } catch(e){ return null; } }
   function get(id){ return document.getElementById(id); }
@@ -1295,6 +1324,7 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
     renderRoomList();
     renderRoomEditor();
     updateChips();
+    refreshCoverageControls();
     try{ if (saved && saved.lightPanelOpen) get("lightPanel").setAttribute("data-open","1"); }catch(e){}
     renderLightLoad();
     updateUndoRedoButtons();
@@ -1544,6 +1574,9 @@ function saveState(){
   var cnaCardOpen = [];
   var lastNote = "";
 
+  // Coverage-change undo/redo history (separate from census undo/redo)
+  var coverageHist = [];
+  var coveragePtr = -1;
   function renderRoomEditor(){
     var title = get("roomEditorTitle");
     var body = get("roomEditorBody");
@@ -1745,6 +1778,7 @@ function saveState(){
       noteDiv.className = "box";
       noteDiv.style.borderStyle = "dashed";
       noteDiv.style.background = "rgba(37,99,235,.04)";
+      noteDiv.innerHTML = '<div class="boxHead"><h3 style="margin:0;font-size:14px;">Coverage Change</h3><span class="tag">Auto-redistributed</span></div>' +
         '<div class="rows"><div class="line">' + escapeHtml(lastNote) + '</div></div>';
       box.appendChild(noteDiv);
     }
@@ -2214,6 +2248,8 @@ function saveState(){
     lastAssignments = assignments;
     lastWorkloadSnapshot = workloadBeds;
 
+    // Reset coverage-change history whenever we generate/shuffle
+    initCoverageHistory();
 
     get("shuffleAgain").disabled = false;
     get("printBtn").disabled = false;
@@ -2222,6 +2258,7 @@ function saveState(){
     get("copyAllWordBtn").disabled = false;
     if(get("toggleAllDetailsBtn")) get("toggleAllDetailsBtn").disabled = false;
 
+    refreshCoverageControls();
     updatePrintHeaderMeta();
     renderLightLoad();
     saveState();
@@ -2637,21 +2674,577 @@ function saveState(){
   get("searchBox").addEventListener("keydown", function(e){
     if (e.key === "Enter") jumpToRoom(e.target.value);
   });
-recalcLoadStats(res.assignments);
 
+  
+  function refreshCoverageControls(){
+    var sel = get("absentCna");
+    var btn = get("applyCoverage");
+    if (!sel || !btn) return;
+
+    var n = parseInt(get("cnaCount").value || "0", 10);
+    if (isNaN(n) || n < 1) n = 1;
+
+    // Build options
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">Select CNA…</option>';
+    for (var i=0;i<n;i++){
+      var num = i+1;
+      var opt = document.createElement("option");
+      opt.value = String(num);
+      var name = (Array.isArray(cnaNames) && cnaNames[i]) ? (" — " + cnaNames[i]) : "";
+      opt.textContent = "CNA " + num + name;
+      sel.appendChild(opt);
+    }
+    if (cur) sel.value = cur;
+
+    btn.disabled = !lastAssignments;
+
+    // Keep coverage undo/redo buttons in sync
+    updateCoverageHistoryUI();
+  }
+
+  function recalcLoadStats(assignments){
+    var loads = [];
+    for (var i=0;i<assignments.length;i++) loads.push(assignments[i].patients);
+    var min = loads.length ? Math.min.apply(null, loads) : 0;
+    var max = loads.length ? Math.max.apply(null, loads) : 0;
+    get("loadStats").textContent = min + "/" + max + "/" + (max-min);
+  }
+
+  function cloneAssignments(as){
+    var out = [];
+    for (var i=0;i<as.length;i++){
+      out.push({ patients: as[i].patients, beds: (as[i].beds || []).slice() });
+    }
+    return out;
+  }
+
+
+  function snapshotCoverageState(noteOverride){
+    return {
+      assignments: lastAssignments ? cloneAssignments(lastAssignments) : null,
+      labels: Array.isArray(lastLabels) ? lastLabels.slice() : null,
+      note: (typeof noteOverride === "string") ? noteOverride : (lastNote || "")
+    };
+  }
+
+  function initCoverageHistory(){
+    // Start history from the current generated assignments
+    if (!lastAssignments){ coverageHist = []; coveragePtr = -1; updateCoverageHistoryUI(); return; }
+    coverageHist = [ snapshotCoverageState() ];
+    coveragePtr = 0;
+    updateCoverageHistoryUI();
+  }
+
+  function pushCoverageHistory(nextNote){
+    if (!lastAssignments) return;
+    var snap = snapshotCoverageState(nextNote);
+    // Trim any redo states
+    if (coveragePtr < coverageHist.length - 1){
+      coverageHist = coverageHist.slice(0, coveragePtr + 1);
+    }
+    coverageHist.push(snap);
+    coveragePtr = coverageHist.length - 1;
+    updateCoverageHistoryUI();
+  }
+
+  function restoreCoverageAt(ptr){
+    if (ptr < 0 || ptr >= coverageHist.length) return;
+    var snap = coverageHist[ptr];
+    if (!snap || !snap.assignments) return;
+    lastAssignments = cloneAssignments(snap.assignments);
+    lastLabels = Array.isArray(snap.labels) ? snap.labels.slice() : null;
+    lastNote = snap.note || "";
+    renderAssignments(lastAssignments, lastLabels, lastNote);
+    recalcLoadStats(lastAssignments);
+    renderObsSummary();
+    refreshCoverageControls();
+    // keep copy/print enabled
+    get("printBtn").disabled = false;
+    get("copyAllBtn").disabled = false;
+    get("copyObsBtn").disabled = false;
+    get("copyAllWordBtn").disabled = false;
+    if(get("toggleAllDetailsBtn")) get("toggleAllDetailsBtn").disabled = false;
+    updateCoverageHistoryUI();
+  }
+
+  function updateCoverageHistoryUI(){
+    var u = get("coverageUndo");
+    var r = get("coverageRedo");
+    var c = get("coverageClear");
+    if (!u || !r || !c) return;
+    var has = (coverageHist && coverageHist.length && coveragePtr >= 0);
+    u.disabled = !(has && coveragePtr > 0);
+    r.disabled = !(has && coveragePtr < coverageHist.length - 1);
+    c.disabled = !(has && coveragePtr > 0); // only meaningful if changed from baseline
+  }
+
+  
+
+  function bedRoomNum(bed){
+    bed = String(bed || "");
+    var m = bed.match(/^(\d+)/);
+    return m ? parseInt(m[1],10) : 0;
+  }
+  function computeCenters(assignments){
+    var centers = [];
+    for (var i=0;i<assignments.length;i++){
+      var beds = assignments[i].beds || [];
+      if (!beds.length){ centers.push(0); continue; }
+      var nums = [];
+      for (var j=0;j<beds.length;j++) nums.push(bedRoomNum(beds[j]));
+      nums.sort(function(a,b){return a-b;});
+      var mid = Math.floor(nums.length/2);
+      centers.push(nums.length % 2 ? nums[mid] : Math.round((nums[mid-1]+nums[mid])/2));
+    }
+    return centers;
+  }
+
+
+
+  function computeTargetLoads(kept, addCount){
+    // Produces a balanced final workload target by distributing additional beds
+    // one-by-one to the current lowest workload CNA (difference ends <= 1).
+    var targets = [];
+    for (var i=0;i<kept.length;i++) targets.push(kept[i].patients || 0);
+    for (var k=0;k<addCount;k++){
+      var best = null;
+      var bestIdx = 0;
+      for (var j=0;j<targets.length;j++){
+        var v = targets[j];
+        if (best === null || v < best){ best = v; bestIdx = j; }
+      }
+      targets[bestIdx] += 1;
+    }
+    return targets;
+  }
+
+function redistributeAfterCnaLeaves(absentIdx, mode, keepClose, fairnessMode){
+    if (!lastAssignments || absentIdx < 0 || absentIdx >= lastAssignments.length) return null;
+    var originalN = lastAssignments.length;
+    if (originalN <= 1) return null;
+
+    // Beds to redistribute
+    var give = (lastAssignments[absentIdx].beds || []).slice();
+    give.sort(bedSort);
+
+    // Labels: keep original CNA numbers, excluding absent
+    var labels = [];
+    for (var i=0;i<originalN;i++){ if (i !== absentIdx) labels.push(i+1); }
+
+    // Full reshuffle uses existing workload snapshot (keeps same bed pool)
+    if (mode === "reshuffle"){
+      var pool = (lastWorkloadSnapshot && lastWorkloadSnapshot.slice) ? lastWorkloadSnapshot.slice() : roomOrderingBeds();
+      ensureCnaAdjust();
+      var adj2 = [];
+      for (var ai=0; ai<labels.length; ai++){
+        var origIdx = labels[ai] - 1;
+        adj2.push((typeof cnaAdjust[origIdx] === "number") ? cnaAdjust[origIdx] : 0);
+      }
+      var targets2 = computeTargetsWithAdjust(pool.length, originalN - 1, adj2);
+      var newAs = assignWorkloadBedsByTargets(pool, targets2);
+      return { assignments: newAs, labels: labels, note: "CNA " + (absentIdx+1) + " left early — reshuffled assignments for remaining staff." };
+    }
+
+    // Minimal-change modes: keep everyone else, just spread the absent CNA's beds.
+    var kept = [];
+    for (var i=0;i<originalN;i++){
+      if (i === absentIdx) continue;
+      kept.push({ patients: lastAssignments[i].patients, beds: (lastAssignments[i].beds || []).slice() });
+    }
+
+
+// === ORDER mode: redistribute absent CNA beds in strict bed order, while keeping rooms as close as possible.
+// - Always processes beds in bedSort order.
+// - Balances final workload using target counts.
+// - If "Keep rooms close" is ON, each next bed goes to the closest eligible CNA (under target),
+//   so we avoid scattered jumps like 26A -> 29C unless that CNA is actually the closest.
+// - If "Keep rooms close" is OFF, we still keep strict bed order but rotate fairly.
+if (mode === "order"){
+  // Only redistribute workload beds (Occupied + Pending Admission) if we have a workload snapshot.
+  var poolSet = null;
+  if (lastWorkloadSnapshot && lastWorkloadSnapshot.length){
+    poolSet = {};
+    for (var ps=0; ps<lastWorkloadSnapshot.length; ps++){ poolSet[lastWorkloadSnapshot[ps]] = 1; }
+  }
+  var give2 = [];
+  for (var gb=0; gb<give.length; gb++){
+    var bedX = give[gb];
+    if (!poolSet || poolSet[bedX]) give2.push(bedX);
+  }
+  give2.sort(bedSort);
+
+  // Balanced final target counts by size (difference <= 1 overall)
+  var curCounts = [];
+  var curTotal = 0;
+  for (var k=0; k<kept.length; k++){
+    var c = (kept[k].beds || []).length;
+    curCounts.push(c);
+    curTotal += c;
+  }
+  var totalAfter = curTotal + give2.length;
+  var base = Math.floor(totalAfter / kept.length);
+  var extra = totalAfter % kept.length;
+  var targets = kept.map(function(_, i){ return base + (i < extra ? 1 : 0); });
+
+  // Rotation start: CNA after absent (human number), mapped into kept index
+  var startLabel = (absentIdx + 1) + 1;
+  var startPos = 0;
+  for (var kk=0; kk<labels.length; kk++){
+    if (labels[kk] === startLabel){ startPos = kk; break; }
+  }
+
+  // Helper: closest distance from bed room to a CNA's current beds (by center + edge guard)
+  var centers = null;
+  function cnaRoomSpan(beds){
+    var min = null, max = null;
+    for (var i=0;i<beds.length;i++){
+      var n = bedRoomNum(beds[i]);
+      if (!n) continue;
+      if (min === null || n < min) min = n;
+      if (max === null || n > max) max = n;
+    }
+    return {min:min, max:max};
+  }
+  var spans = [];
+  for (var si=0; si<kept.length; si++){
+    spans.push(cnaRoomSpan(kept[si].beds || []));
+  }
+  if (keepClose) centers = computeCenters(kept);
+
+  function pickByRotation(candidates){
+    // candidates are kept-indexes
+    for (var step=0; step<kept.length; step++){
+      var j = (startPos + step) % kept.length;
+      if (candidates.indexOf(j) !== -1){
+        startPos = (j + 1) % kept.length;
+        return j;
+      }
+    }
+    startPos = ((candidates[0] || 0) + 1) % kept.length;
+    return candidates[0] || 0;
+  }
+
+  for (var gi=0; gi<give2.length; gi++){
+    var bed = give2[gi];
+    var rnum = bedRoomNum(bed);
+
+    // Eligible: still under target
+    var eligible = [];
+    for (var ei=0; ei<kept.length; ei++){
+      if ((kept[ei].beds || []).length < targets[ei]) eligible.push(ei);
+    }
+    // Fallback (should be rare): if everyone already at/over target, allow anyone
+    if (!eligible.length){
+      for (var ee=0; ee<kept.length; ee++) eligible.push(ee);
+    }
+
+    var chosen = 0;
+
+    if (keepClose){
+      // Compute distance score:
+      // 1) primary = distance to center
+      // 2) secondary penalty if bed is beyond current span by more than 1 room (avoids big jumps)
+      var bestScore = null;
+      var best = [];
+      for (var e=0; e<eligible.length; e++){
+        var idx = eligible[e];
+        var c = centers ? (centers[idx] || 0) : 0;
+        var dCenter = Math.abs(rnum - c);
+
+        var sp = spans[idx];
+        var pen = 0;
+        if (sp && sp.min !== null && sp.max !== null){
+          if (rnum < sp.min - 1) pen = (sp.min - 1) - rnum;
+          else if (rnum > sp.max + 1) pen = rnum - (sp.max + 1);
+        }
+
+        // Weight the jump penalty higher than center distance to strongly discourage scattered beds.
+        var score = (dCenter * 1) + (pen * 5);
+
+        if (bestScore === null || score < bestScore){
+          bestScore = score;
+          best = [idx];
+        } else if (score === bestScore){
+          best.push(idx);
+        }
+      }
+
+      // Tie-break: lowest current workload, then rotation
+      var bestLoad = null;
+      var bestSet = [];
+      for (var t=0; t<best.length; t++){
+        var bi = best[t];
+        var load = (kept[bi].beds || []).length;
+        if (bestLoad === null || load < bestLoad){ bestLoad = load; bestSet = [bi]; }
+        else if (load === bestLoad) bestSet.push(bi);
+      }
+      chosen = pickByRotation(bestSet);
+    } else {
+      chosen = pickByRotation(eligible);
+    }
+
+    kept[chosen].beds.push(bed);
+    kept[chosen].beds.sort(bedSort);
+    kept[chosen].patients = kept[chosen].beds.length;
+
+    // Update center/span for chosen CNA only
+    if (keepClose && centers){
+      centers[chosen] = computeCenters([kept[chosen]])[0];
+    }
+    spans[chosen] = cnaRoomSpan(kept[chosen].beds || []);
+  }
+
+  for (var kk2=0; kk2<kept.length; kk2++){
+    kept[kk2].beds.sort(bedSort);
+    kept[kk2].patients = kept[kk2].beds.length;
+  }
+
+  var note2 = "CNA " + (absentIdx+1) + " left early — spread " + give2.length + " workload patient(s) in order across remaining CNAs" +
+              (keepClose ? " (kept rooms close)" : "") + ".";
+  return { assignments: kept, labels: labels, note: note2 };
+}
+
+    // Starting pointer: next CNA after absent, but within the kept list
+    var startLabel = (absentIdx + 1) + 1; // human number for next CNA
+    var startPos = 0;
+    var centers = null;
+    var currentLoads = [];
+    for (var cl=0; cl<kept.length; cl++) currentLoads.push(kept[cl].patients || 0);
+    ensureCnaAdjust();
+    var adjKept = [];
+    for (var ax=0; ax<labels.length; ax++){
+      var orig = labels[ax] - 1;
+      adjKept.push((typeof cnaAdjust[orig] === "number") ? cnaAdjust[orig] : 0);
+    }
+    var targetLoads = computeFinalTargetsFromCurrent(currentLoads, give.length, adjKept);
+    for (var k=0;k<labels.length;k++){
+      if (labels[k] === startLabel){ startPos = k; break; }
+    }
+
+    for (var b=0;b<give.length;b++){
+      var bed = give[b];
+
+      // Keep-close + fairness: prefer nearest rooms, but prevent one CNA from absorbing most of the load.
+      // We apply a soft cap based on the expected balanced workload.
+      // Fair + Close reassign:
+      // 1) We compute balanced FINAL target loads first.
+      // 2) While redistributing, we assign each bed to an eligible CNA:
+      //    - Strict: cannot exceed target
+      //    - Soft: may exceed target by +1 only if no one under target is close enough
+      // 3) Among eligible CNAs, prefer nearest rooms; then apply chosen fairness mode.
+      var targetIdx = 0;
+
+      if (keepClose && !centers) centers = computeCenters(kept);
+
+      // Determine eligibility
+      var allowExtra = (fairnessMode === "soft") ? 1 : 0;
+
+      // First pass: CNAs still under target
+      var eligible = [];
+      for (var ei=0; ei<kept.length; ei++){
+        if ((kept[ei].patients || 0) < targetLoads[ei]) eligible.push(ei);
+      }
+
+      // Soft pass: if nobody is under target (should be rare), allow +1
+      if (!eligible.length && allowExtra){
+        for (var ej=0; ej<kept.length; ej++){
+          if ((kept[ej].patients || 0) < (targetLoads[ej] + 1)) eligible.push(ej);
+        }
+      }
+
+      // Absolute fallback: everyone (should never happen)
+      if (!eligible.length){
+        for (var ek=0; ek<kept.length; ek++) eligible.push(ek);
+      }
+
+      function pickByRotation(candidates){
+        for (var step=0; step<kept.length; step++){
+          var j = (startPos + step) % kept.length;
+          if (candidates.indexOf(j) !== -1){
+            targetIdx = j;
+            startPos = (j+1) % kept.length;
+            return;
+          }
+        }
+        targetIdx = candidates[0] || 0;
+        startPos = (targetIdx + 1) % kept.length;
+      }
+
+      // Prefer nearest room among eligible
+      if (keepClose){
+        var rnum = bedRoomNum(bed);
+        var bestDist = null;
+        for (var ed=0; ed<eligible.length; ed++){
+          var ii = eligible[ed];
+          var c = centers[ii] || 0;
+          var d = Math.abs(rnum - c);
+          if (bestDist === null || d < bestDist) bestDist = d;
+        }
+        var near = [];
+        for (var ed2=0; ed2<eligible.length; ed2++){
+          var ii2 = eligible[ed2];
+          var c2 = centers[ii2] || 0;
+          var d2 = Math.abs(rnum - c2);
+          if (d2 === bestDist) near.push(ii2);
+        }
+
+        if (mode === "least"){
+          // among nearest, pick lowest current workload; tie by rotation
+          var bestLoad = null;
+          for (var nl=0; nl<near.length; nl++){
+            var idxN = near[nl];
+            var load = kept[idxN].patients || 0;
+            if (bestLoad === null || load < bestLoad) bestLoad = load;
+          }
+          var bestSet = [];
+          for (var nl2=0; nl2<near.length; nl2++){
+            var idxN2 = near[nl2];
+            if ((kept[idxN2].patients || 0) === bestLoad) bestSet.push(idxN2);
+          }
+          pickByRotation(bestSet);
+        } else {
+          // order: rotation among nearest
+          pickByRotation(near);
+        }
+      } else {
+        // No keepClose: standard fairness
+        if (mode === "least"){
+          var best = null;
+          for (var t=0;t<eligible.length;t++){
+            var candIdx = eligible[t];
+            var cand = kept[candIdx].patients || 0;
+            if (best === null || cand < best) best = cand;
+          }
+          var bestSet2 = [];
+          for (var t2=0;t2<eligible.length;t2++){
+            var candIdx2 = eligible[t2];
+            if ((kept[candIdx2].patients || 0) === best) bestSet2.push(candIdx2);
+          }
+          pickByRotation(bestSet2);
+        } else {
+          pickByRotation(eligible);
+        }
+      }
+kept[targetIdx].beds.push(bed);
+      kept[targetIdx].beds.sort(bedSort);
+      kept[targetIdx].patients = kept[targetIdx].beds.length;
+      if (keepClose && centers){ centers[targetIdx] = computeCenters([kept[targetIdx]])[0]; }
+    }
+
+    var note = "CNA " + (absentIdx+1) + " left early — redistributed " + give.length + " patient(s) across remaining CNAs (" +
+      (mode === "least" ? "least workload" : "in order") + (keepClose ? ", nearest rooms" : "") + ", " + (fairnessMode === "soft" ? "soft balance" : "strict balance") + ").";
+    return { assignments: kept, labels: labels, note: note };
+  }
+
+
+  // Light load UI events
+  if (get("lightToggle")){
+    get("lightToggle").addEventListener("click", function(){
+      var panel = get("lightPanel");
+      if (!panel) return;
+      var open = panel.getAttribute("data-open") === "1";
+      panel.setAttribute("data-open", open ? "0" : "1");
+      saveState();
+      renderLightLoad();
+    });
+  }
+  if (get("lightAdd")){
+    get("lightAdd").addEventListener("click", function(){
+      ensureLightRules();
+      var n = parseInt(get("cnaCount").value || "1", 10);
+      // pick first CNA not already in rules if possible
+      var used = {};
+      for (var i=0;i<lightRules.length;i++) used[lightRules[i].cna] = true;
+      var pick = 1;
+      for (var k=1;k<=n;k++){ if (!used[k]){ pick = k; break; } }
+      lightRules.push({ cna: pick, adj: -1 });
+      // auto-expand
+      var panel = get("lightPanel");
+      if (panel) panel.setAttribute("data-open","1");
+      saveState();
+      renderLightLoad();
+    });
+  }
+  if (get("lightClear")){
+    get("lightClear").addEventListener("click", function(){
+      lightRules = [];
+      ensureCnaAdjust();
+      for (var i=0;i<cnaAdjust.length;i++) cnaAdjust[i] = 0;
+      saveState();
+      renderLightLoad();
+      toast("Light load cleared");
+    });
+  }
+
+get("generate").addEventListener("click", function(){ doGenerate(false); });
+  get("shuffleAgain").addEventListener("click", function(){ doGenerate(true); });
+  get("printBtn").addEventListener("click", function(){
+    updatePrintHeaderMeta(); syncOnePerPage(); window.print();
+  });
+
+  get("copyAllBtn").addEventListener("click", copyAll);
+  get("copyAllWordBtn").addEventListener("click", copyAllForWord);
+  if(get("toggleAllDetailsBtn")) get("toggleAllDetailsBtn").addEventListener("click", toggleAllDetails);
+  get("copyObsBtn").addEventListener("click", copyObsOnly);
+  get("copyHospBtn").addEventListener("click", copyHospOnly);
+
+  get("applyCoverage").addEventListener("click", function(){
+    var sel = get("absentCna");
+    var modeSel = get("coverageMode");
+    if (!sel || !modeSel || !lastAssignments){ toast("Generate assignments first"); return; }
+    var absentNum = parseInt(sel.value || "", 10);
+    if (isNaN(absentNum) || absentNum < 1 || absentNum > lastAssignments.length){ toast("Select a CNA"); return; }
+    var absentIdx = absentNum - 1;
+    var mode = modeSel.value || "order";
+    var keepClose = !!(get("keepClose") && get("keepClose").checked);
+    var fairnessMode = (get("fairnessMode") && get("fairnessMode").value) ? get("fairnessMode").value : "strict";
+    var res = redistributeAfterCnaLeaves(absentIdx, mode, keepClose, fairnessMode);
+    if (!res){ toast("Cannot redistribute"); return; }
+
+    // Ensure history exists
+    if (!coverageHist || coveragePtr < 0){ initCoverageHistory(); }
+
+    // Apply
+    lastAssignments = res.assignments;
+    // Keep lastWorkloadSnapshot unchanged (same bed pool), but CNA count effectively reduced.
+    lastLabels = res.labels;
+    lastNote = res.note || "";
+    renderAssignments(res.assignments, res.labels, res.note);
+    recalcLoadStats(res.assignments);
+
+    // Add to coverage history
+    pushCoverageHistory(lastNote);
 
     get("printBtn").disabled = false;
     get("copyAllBtn").disabled = false;
     get("copyObsBtn").disabled = false;
     get("copyAllWordBtn").disabled = false;
 
+    toast("Coverage updated");
   });
 
+  if (get("coverageUndo")) get("coverageUndo").addEventListener("click", function(){
+    if (!coverageHist || coveragePtr <= 0) return;
+    coveragePtr -= 1;
+    restoreCoverageAt(coveragePtr);
+    toast("Coverage undo");
   });
 
+  if (get("coverageRedo")) get("coverageRedo").addEventListener("click", function(){
+    if (!coverageHist || coveragePtr >= coverageHist.length - 1) return;
+    coveragePtr += 1;
+    restoreCoverageAt(coveragePtr);
+    toast("Coverage redo");
   });
 
+  if (get("coverageClear")) get("coverageClear").addEventListener("click", function(){
+    if (!coverageHist || coveragePtr <= 0) return;
+    var ok = confirm("Clear coverage changes and go back to the last generated assignments?");
     if (!ok) return;
+    coveragePtr = 0;
+    restoreCoverageAt(coveragePtr);
+    toast("Coverage cleared");
   });
 
 
@@ -2664,6 +3257,7 @@ recalcLoadStats(res.assignments);
     renderRoomEditor();
     saveState();
   });
+  get("cnaCount").addEventListener("change", function(){ renderLightLoad(); saveState(); updateChips(); refreshCoverageControls(); });
 
   get("printDate").addEventListener("change", saveState);
   get("printShift").addEventListener("change", saveState);
@@ -2768,6 +3362,7 @@ recalcLoadStats(res.assignments);
     renderRoomList();
     renderRoomEditor();
     updateChips();
+    refreshCoverageControls();
   }catch(e){
     showError("Initialization failed: " + e.message + ". Try refreshing or use the reset instructions.");
   }
