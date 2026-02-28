@@ -705,18 +705,6 @@
 </style>
 
 <style>
-/* === Room Range Print Styling Enhancement === */
-@media print {
-  .range,
-  .room-range,
-  .range-text,
-  .roomRange,
-  .rangeLabel {
-    font-weight: 700 !important;
-    text-decoration: underline !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.6px !important;
-  }
 }
 
 
@@ -810,6 +798,63 @@
   .printHeader, .printHeaderRow { margin-bottom: 6mm !important; }
   .cnaCard, .cnaBox, .card, .box { margin-bottom: 4mm !important; padding-bottom: 0 !important; }
 }
+
+
+/* === PRINT: smaller header, remove logo, unify desktop/iPhone === */
+@media print {
+  /* Remove logo to save space */
+  #printHeader .phLogo,
+  #printHeader .printLogo,
+  #printHeader img,
+  .printLogo,
+  .print-logo { display: none !important; }
+
+  /* Tighten header spacing */
+  #printHeader {
+    padding: 8px 12px !important;
+    margin: 0 0 8px 0 !important;
+    border-bottom: 1px solid #222 !important;
+  }
+
+  /* Keep titles compact (no huge wrap) */
+  #printHeader .phTitle,
+  #printHeader h1,
+  #printHeader .printTitle {
+    font-size: 18px !important;
+    line-height: 1.15 !important;
+    margin: 0 0 4px 0 !important;
+  }
+
+  #printHeader .phMeta,
+  #printHeader .printMeta,
+  #printHeader .metaLine {
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+  }
+
+  #printHeader .phRight,
+  #printHeader .rightMeta {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+
+  /* Make sure header doesn't cause horizontal overflow on iPhone print */
+  #printHeader, #printHeader * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Room Range back to normal (no underline / no all-caps / not oversized) */
+  .roomRange, .cnaRange, .rangeLine, .range, .rangeLabel, .printRange {
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-size: 12px !important;
+  }
+}
+
 </style>
 
 </head>
