@@ -702,6 +702,21 @@
     overscroll-behavior: contain;
   }
 }
+
+    /* iOS/mobile: ensure the Rooms list can always scroll to the end */
+    @media (max-width: 980px){
+      .roomList{ display:flex; flex-direction:column; }
+      .roomListScroll{
+        flex: 1 1 auto;
+        max-height: none !important;
+        height: min(52dvh, 520px);
+        overflow-y: scroll !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+      }
+    }
+
 </style>
 
 <style>
@@ -718,6 +733,21 @@
     letter-spacing: 0.6px !important;
   }
 }
+
+    /* iOS/mobile: ensure the Rooms list can always scroll to the end */
+    @media (max-width: 980px){
+      .roomList{ display:flex; flex-direction:column; }
+      .roomListScroll{
+        flex: 1 1 auto;
+        max-height: none !important;
+        height: min(52dvh, 520px);
+        overflow-y: scroll !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+      }
+    }
+
 </style>
 
 
@@ -750,6 +780,21 @@
     margin-top: 6mm !important;
   }
 }
+
+    /* iOS/mobile: ensure the Rooms list can always scroll to the end */
+    @media (max-width: 980px){
+      .roomList{ display:flex; flex-direction:column; }
+      .roomListScroll{
+        flex: 1 1 auto;
+        max-height: none !important;
+        height: min(52dvh, 520px);
+        overflow-y: scroll !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+      }
+    }
+
 </style>
 
 </head>
@@ -3452,5 +3497,27 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
   }
 })();
 </script>
+
+<script>
+(function(){
+  function enableIOSScrollFix(el){
+    if(!el) return;
+    // Force scrollable behavior on iOS (prevents "stuck" at mid-list in nested scroll containers)
+    el.style.overflowY = 'scroll';
+    el.style.webkitOverflowScrolling = 'touch';
+    el.style.overscrollBehavior = 'contain';
+    el.style.touchAction = 'pan-y';
+    el.addEventListener('touchstart', function(){
+      if(el.scrollTop <= 0) el.scrollTop = 1;
+      const max = el.scrollHeight - el.clientHeight;
+      if(el.scrollTop >= max) el.scrollTop = Math.max(0, max - 1);
+    }, {passive:true});
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    enableIOSScrollFix(document.getElementById('roomList'));
+  });
+})();
+</script>
+
 </body>
 </html>
