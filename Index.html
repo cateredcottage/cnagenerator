@@ -367,7 +367,20 @@
       .box{ break-inside: avoid; page-break-inside: avoid; }
       body.print-one-per .box.cnaBox{ break-after: page; page-break-after: always; }
       body.print-one-per .box.cnaBox:last-of-type{ break-after:auto; page-break-after:auto; }
-    }
+
+  /* Print safety: iOS Safari may clip overflow:auto areas. Force full expansion */
+  html, body { height:auto !important; overflow:visible !important; }
+  .scroll, .roomListScroll, .modalBody, .assignmentsWrap, .printWrap {
+    max-height:none !important;
+    height:auto !important;
+    overflow:visible !important;
+  }
+  /* If any cards were inside scroll containers, avoid clipping */
+  .card, .box, .cnaBox { overflow:visible !important; }
+  /* Hide mobile sticky bar / in-app chrome for print */
+  .mobileBar, .stickyBar, .bottomBar { display:none !important; }
+
+}
 
     /* Error banner */
     .err{
@@ -701,6 +714,11 @@
     margin:6px 0 !important;
   }
 }
+
+
+/* Range line: keep clean (no underline / all-caps) */
+.rangeLine, .roomRangeLine { font-weight:600; text-decoration:none !important; text-transform:none !important; }
+@media print { .rangeLine, .roomRangeLine { font-weight:600; text-decoration:none !important; text-transform:none !important; } }
 
 </style>
 
