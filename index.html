@@ -549,10 +549,6 @@
 }
 
 
-/* Hide Spread Rooms (auto-balance) option */
-#spreadRooms, label[for="spreadRooms"]{ display:none !important; }
-
-
 /* ===== Print header logo (uniform circle, no cut edges) ===== */
 #printHeader .phLogo{
   background-color:#f7f5ef;            /* uniform fill behind logo */
@@ -592,20 +588,6 @@
   #printHeader .phText{ flex:1; min-width:0; }
   #printHeader .phText h1, #printHeader .phText h2{
     word-break:break-word;
-  }
-}
-
-
-/* === PRINT: Make Room Range bold / underlined / uppercase (professional) === */
-@media print{
-  .cnaRange, .cnaSummary.cnaRange{
-    font-weight: 800 !important;
-    text-decoration: underline !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.6px !important;
-    font-size: 13.5pt !important;
-    margin: 6px 0 8px 0 !important;
-    display: block !important;
   }
 }
 
@@ -671,6 +653,55 @@
   .mobileActionBar{ display:none !important; }
 }
 
+
+/* === PRINT: Room Range (clean / normal like on-screen cards) === */
+@media print{
+  .cnaRange, .cnaSummary.cnaRange{
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-size: 10.5pt !important;
+    margin: 4px 0 6px 0 !important;
+    display: block !important;
+    color: #334155 !important; /* subtle slate */
+  }
+}
+
+
+
+/* ===== Compact Print Layout ===== */
+@media print {
+  body{
+    background:#ffffff !important;
+  }
+  .topbar,
+  .mobileGenerateBar,
+  .brand,
+  .logoWrap,
+  .headerLogo,
+  img.logo{
+    display:none !important;
+  }
+  *{
+    box-shadow:none !important;
+  }
+  .card, .assignment, .cnaCard{
+    margin:6px 0 !important;
+    padding:8px 10px !important;
+    border-radius:8px !important;
+  }
+  h1,h2,h3{
+    margin:4px 0 !important;
+  }
+  p{
+    margin:2px 0 !important;
+  }
+  .divider{
+    margin:6px 0 !important;
+  }
+}
+
 </style>
 
 <style>
@@ -687,6 +718,40 @@
     letter-spacing: 0.6px !important;
   }
 }
+
+
+/* ===== Compact Print Layout ===== */
+@media print {
+  body{
+    background:#ffffff !important;
+  }
+  .topbar,
+  .mobileGenerateBar,
+  .brand,
+  .logoWrap,
+  .headerLogo,
+  img.logo{
+    display:none !important;
+  }
+  *{
+    box-shadow:none !important;
+  }
+  .card, .assignment, .cnaCard{
+    margin:6px 0 !important;
+    padding:8px 10px !important;
+    border-radius:8px !important;
+  }
+  h1,h2,h3{
+    margin:4px 0 !important;
+  }
+  p{
+    margin:2px 0 !important;
+  }
+  .divider{
+    margin:6px 0 !important;
+  }
+}
+
 </style>
 
 </head>
@@ -878,11 +943,7 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
           </div>
 
           <div class="btnrow" style="margin-top:8px;">
-            <label class="chipToggle" style="display:flex;align-items:center;gap:8px;margin:0;padding:8px 10px;border-radius:14px;border:1px solid rgba(15,23,42,.12);background:rgba(15,23,42,.03);font-size:12px;color:var(--muted);">
-              <input id="spreadRooms" type="checkbox" style="width:auto;margin:0;"/>
-              Spread rooms (auto-balance)
-            </label>
-          </div>
+            </div>
 
           <div class="helper">Workload min/max/diff: <b id="loadStats">-</b></div>
         </div>
@@ -2223,8 +2284,7 @@ function saveState(){
 
     ensureCnaAdjust();
     var targets = computeTargetsWithAdjust(workloadBeds.length, cnaCount, cnaAdjust);
-    var spread = !!(get("spreadRooms") && get("spreadRooms").checked);
-    var assignments = spread ? assignWorkloadBedsGreedy(workloadBeds, targets) : assignWorkloadBedsByTargets(workloadBeds, targets);
+    var assignments = assignWorkloadBedsByTargets(workloadBeds, targets);
     renderAssignments(assignments, null, "");
     renderObsSummary();
 
@@ -3297,19 +3357,6 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
   } else {
     disableRoomChecklist();
   }
-})();
-</script>
-
-
-<script>
-(function(){
-  function forceSpreadOff(){
-    try{
-      var el=document.getElementById("spreadRooms");
-      if(el){ el.checked=false; }
-    }catch(e){}
-  }
-  document.addEventListener("DOMContentLoaded", forceSpreadOff);
 })();
 </script>
 
