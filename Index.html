@@ -1386,7 +1386,8 @@ function saveState(){
         printRoomList: !!(get("printRoomList") && get("printRoomList").checked),
         printDetails: !!(get("printDetails") && get("printDetails").checked),
         detailsDefault: !!(get("detailsDefault") && get("detailsDefault").checked),
-        selectedRoom: selectedRoom
+        selectedRoom: selectedRoom,
+        lightRules: lightRules
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       setSaveStatus("Saved");
@@ -2372,6 +2373,7 @@ function saveState(){
 
         var adjSel = document.createElement("select");
         adjSel.innerHTML = ""
+          + "<option value='0'>OFF</option>"
           + "<option value='-1'>-1 patient</option>"
           + "<option value='-2'>-2 patients</option>";
         adjSel.value = String(rule.adj || -1);
@@ -2387,7 +2389,16 @@ function saveState(){
           renderLightLoad();
         });
         adjSel.addEventListener("change", function(){
-          rule.adj = parseInt(adjSel.value || "-1", 10) || -1;
+          var v = parseInt(adjSel.value || "0", 10);
+          if (!isFinite(v)) v = -1;
+          if (v === 0){
+            // OFF -> remove this rule completely
+            lightRules.splice(idx, 1);
+            saveState();
+            renderLightLoad();
+            return;
+          }
+          rule.adj = v;
           saveState();
           setLightPill();
         });
