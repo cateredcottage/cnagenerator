@@ -699,6 +699,38 @@
 }
 </style>
 
+
+<style>
+@media print {
+
+  /* Remove any logo images in print */
+  img, .logo, .logo-circle, .headerLogo, .print-logo {
+    display: none !important;
+  }
+
+  /* Make header small, uniform, bold but compact */
+  .print-header,
+  .print-title,
+  h1, h2 {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+  }
+
+  /* Remove large spacing */
+  header, .header, .printHeader {
+    margin: 0 !important;
+    padding: 2px 0 !important;
+  }
+
+  body {
+    margin-top: 6mm !important;
+  }
+}
+</style>
+
 </head>
 <body>
   <div class="topbar">
