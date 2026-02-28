@@ -595,6 +595,82 @@
   }
 }
 
+
+/* === PRINT: Make Room Range bold / underlined / uppercase (professional) === */
+@media print{
+  .cnaRange, .cnaSummary.cnaRange{
+    font-weight: 800 !important;
+    text-decoration: underline !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.6px !important;
+    font-size: 13.5pt !important;
+    margin: 6px 0 8px 0 !important;
+    display: block !important;
+  }
+}
+
+
+/* === PRINT: Room Range (clean) === */
+@media print{
+  .cnaRange, .cnaSummary.cnaRange{
+    font-weight: 700 !important;
+    text-decoration: underline !important;
+    text-transform: none !important;
+    letter-spacing: 0.2px !important;
+    font-size: 12pt !important;
+    color: #000 !important;
+    margin: 6px 0 8px 0 !important;
+    display: block !important;
+  }
+}
+
+
+/* === Mobile action bar (Generate / Shuffle / Print) === */
+.mobileActionBar{ display:none; }
+@media (max-width: 820px){
+  .mobileActionBar{
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(15,23,42,0.12);
+    box-shadow: 0 10px 30px rgba(2,6,23,0.18);
+    z-index: 9999;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .mobileActionBar .mBtn{
+    flex: 1 1 0;
+    padding: 12px 10px;
+    border-radius: 14px;
+    font-weight: 700;
+    border: 1px solid rgba(15,23,42,0.14);
+    background: #fff;
+  }
+  .mobileActionBar .mPrimary{
+    border: none;
+    background: linear-gradient(135deg, #2563eb, #10b981);
+    color: #fff;
+  }
+  .mobileActionBar .mGhost{
+    color: #0f172a;
+    background: rgba(255,255,255,0.75);
+  }
+  .mobileActionBar .mBtn:disabled{
+    opacity: 0.45;
+  }
+  /* Give content room so the bar doesn't cover buttons/text */
+  body{ padding-bottom: 92px; }
+}
+@media print{
+  .mobileActionBar{ display:none !important; }
+}
+
 </style>
 
 <style>
@@ -1765,8 +1841,8 @@ function saveState(){
         rows.className = "rows";
 
         var summary = document.createElement("div");
-        summary.className = "cnaSummary";
-        summary.textContent = "Range: " + bedRunLabel(cna.beds);
+        summary.className = "cnaSummary cnaRange";
+        summary.textContent = "Room Range: " + bedRunLabel(cna.beds);
         rows.appendChild(summary);
 
         var details = document.createElement("div");
@@ -3257,5 +3333,50 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
 })();
 </script>
 
+
+<!-- Mobile quick actions (Generate / Shuffle / Print) -->
+<div id="mobileActionBar" class="mobileActionBar" aria-label="Quick actions">
+  <button type="button" id="mGenerate" class="mBtn mPrimary">Generate</button>
+  <button type="button" id="mShuffle" class="mBtn mGhost" disabled>Shuffle</button>
+  <button type="button" id="mPrint" class="mBtn mGhost" disabled>Print</button>
+</div>
+
+<script>
+// === Mobile action bar wiring ===
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function syncMobileButtons(){
+    var gen = byId('generate');
+    var sh  = byId('shuffleAgain');
+    var pr  = byId('printBtn');
+    var mGen = byId('mGenerate');
+    var mSh  = byId('mShuffle');
+    var mPr  = byId('mPrint');
+    if(!gen || !sh || !pr || !mGen || !mSh || !mPr) return;
+    mSh.disabled = !!sh.disabled;
+    mPr.disabled = !!pr.disabled;
+  }
+  function wire(){
+    var gen = byId('generate');
+    var sh  = byId('shuffleAgain');
+    var pr  = byId('printBtn');
+    var mGen = byId('mGenerate');
+    var mSh  = byId('mShuffle');
+    var mPr  = byId('mPrint');
+    if(!gen || !sh || !pr || !mGen || !mSh || !mPr) return;
+    mGen.addEventListener('click', function(){ gen.click(); });
+    mSh.addEventListener('click', function(){ sh.click(); });
+    mPr.addEventListener('click', function(){ pr.click(); });
+    // keep state synced (after generate enables shuffle/print)
+    setInterval(syncMobileButtons, 300);
+    syncMobileButtons();
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', wire);
+  }else{
+    wire();
+  }
+})();
+</script>
 </body>
 </html>
