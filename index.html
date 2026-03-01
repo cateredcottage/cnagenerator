@@ -193,9 +193,8 @@
     .editGrid{ display:grid; grid-template-columns: 145px 1fr; gap:10px; align-items:start; }
     .roomList{
       border:1px solid rgba(15,23,42,.10);
-      border-radius:14px;
-      overflow: visible;
-      background:#fff;
+      border-radius:14px; overflow:hidden; background:#fff;
+      max-height: 380px;
     }
     .roomListHead{
       padding:10px; font-size:12px; color:var(--muted);
@@ -203,13 +202,7 @@
       background:#fbfcff;
       position:sticky; top:0; z-index:3;
     }
-    .roomListScroll{
-      height: min(60dvh, 520px);
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      touch-action: pan-y;
-    }
+    .roomListScroll{ max-height: 340px; overflow:auto; }
     .roomBtn{
       width:100%;
       text-align:left;
@@ -542,13 +535,7 @@
       /* Reduce heavy shadows on mobile to feel snappier */
       .card{ box-shadow: 0 6px 14px rgba(2,6,23,.10) !important; }
       /* Make room list show more items */
-      .roomListScroll{
-      height: min(60dvh, 520px);
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      touch-action: pan-y;
-    }
+      .roomListScroll{ max-height: 65vh !important; -webkit-overflow-scrolling: touch; }
       /* Keep the chips row compact */
       .statsWrap{ gap: 6px !important; }
       .statChip{ padding: 6px 10px !important; font-size: 12px !important; }
@@ -840,13 +827,7 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
             <b>CNA Workload</b> = Occupied + Pending Admission.<br/>
             Beds marked <b>On Observation</b> do not count toward CNA workload.
           </div>
-          <div class="legend" aria-hidden="true">
-            <div class="lg"><span class="dot occ"></span> Occupied</div>
-            <div class="lg"><span class="dot obs"></span> On Observation</div>
-            <div class="lg"><span class="dot adm"></span> Pending Admission</div>
-            <div class="lg"><span class="dot hosp"></span> Out to Hospital</div>
-            <div class="lg"><span class="dot empty"></span> Empty</div>
-          </div>
+          
         </div>
 
         <div>
@@ -1002,6 +983,14 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
             <div class="cardHead">
               <h2>Edit census (tap a room)</h2>
               <div class="sub">Use the room list to edit one room at a time. Fast + clean.</div>
+<div class="legend">
+            <div class="lg"><span class="dot occ"></span> Occupied</div>
+            <div class="lg"><span class="dot obs"></span> On Observation</div>
+            <div class="lg"><span class="dot adm"></span> Pending Admission</div>
+            <div class="lg"><span class="dot hosp"></span> Out to Hospital</div>
+            <div class="lg"><span class="dot empty"></span> Empty</div>
+          </div>
+
               <div class="sub">Legend: <b>OBS</b> = On Observation (does not count toward CNA workload). <b>ADM</b> = Pending Admission (counts toward workload; not census).</div>
             </div>
 
