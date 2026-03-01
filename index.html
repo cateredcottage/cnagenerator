@@ -193,8 +193,15 @@
     .editGrid{ display:grid; grid-template-columns: 145px 1fr; gap:10px; align-items:start; }
     .roomList{
       border:1px solid rgba(15,23,42,.10);
-      border-radius:14px; overflow:hidden; background:#fff;
-      max-height: 380px;
+      border-radius:14px;
+      background:#fff;
+
+      /* Allow full scrolling on mobile (fix: list stuck at Room 28) */
+      overflow-y:auto;
+      -webkit-overflow-scrolling: touch;
+
+      /* Use viewport height so it doesn't cut off */
+      max-height: calc(100vh - 260px);
     }
     .roomListHead{
       padding:10px; font-size:12px; color:var(--muted);
@@ -630,10 +637,10 @@
     position: fixed;
     left: 12px;
     right: 12px;
-    bottom: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
     display: flex;
     gap: 10px;
-    padding: 10px;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
     border-radius: 18px;
     background: rgba(255,255,255,0.92);
     border: 1px solid rgba(15,23,42,0.12);
@@ -663,7 +670,7 @@
     opacity: 0.45;
   }
   /* Give content room so the bar doesn't cover buttons/text */
-  body{ padding-bottom: 92px; }
+  body{ padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
 }
 @media print{
   .mobileActionBar{ display:none !important; }
