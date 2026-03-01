@@ -193,8 +193,9 @@
     .editGrid{ display:grid; grid-template-columns: 145px 1fr; gap:10px; align-items:start; }
     .roomList{
       border:1px solid rgba(15,23,42,.10);
-      border-radius:14px; overflow:hidden; background:#fff;
-      max-height: 380px;
+      border-radius:14px;
+      overflow: visible;
+      background:#fff;
     }
     .roomListHead{
       padding:10px; font-size:12px; color:var(--muted);
@@ -202,7 +203,13 @@
       background:#fbfcff;
       position:sticky; top:0; z-index:3;
     }
-    .roomListScroll{ max-height: 340px; overflow:auto; }
+    .roomListScroll{
+      height: min(60dvh, 520px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+    }
     .roomBtn{
       width:100%;
       text-align:left;
@@ -535,7 +542,13 @@
       /* Reduce heavy shadows on mobile to feel snappier */
       .card{ box-shadow: 0 6px 14px rgba(2,6,23,.10) !important; }
       /* Make room list show more items */
-      .roomListScroll{ max-height: 65vh !important; -webkit-overflow-scrolling: touch; }
+      .roomListScroll{
+      height: min(60dvh, 520px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+    }
       /* Keep the chips row compact */
       .statsWrap{ gap: 6px !important; }
       .statChip{ padding: 6px 10px !important; font-size: 12px !important; }
