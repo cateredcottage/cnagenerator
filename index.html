@@ -1171,6 +1171,62 @@
 }
 </style>
 
+
+<style id="ULTRA_SAFE_IOS_PRINT">
+/* =====================================================
+   ULTRA SAFE iOS PRINT
+   - Slightly more bottom margin (prevents Safari clipping)
+   - More compact header + boxes to recover space
+   ===================================================== */
+@media print{
+  @page{ size: landscape; margin: 5mm 5mm 12mm 5mm; } /* extra bottom safety */
+
+  body{ font-size:10px !important; line-height:1.15 !important; }
+
+  /* header: compact */
+  #printHeader{ margin:0 0 4px 0 !important; padding:0 !important; }
+  #printHeader h1, #printHeader h2{ margin:0 0 2px 0 !important; }
+  #printHeader .meta, #printHeader .subMeta{ margin:0 !important; }
+
+  /* remove large separators */
+  hr, .divider, .thickLine{ margin:4px 0 !important; }
+
+  /* assignments title: tighter */
+  .sectionTitle, #assignmentsTitle{ margin:4px 0 6px 0 !important; }
+
+  /* 2-column cards: tighter vertical */
+  #assignments, #printRoot{ font-size:0 !important; }
+  .box.cnaBox{
+    width:49.7% !important;
+    padding:5px 7px !important;
+    margin:0 0 4px 0 !important;
+    border-radius:8px !important; /* smaller radius avoids clipping */
+    font-size:10px !important;
+  }
+  .box.cnaBox:nth-of-type(odd){ margin-right:0.6% !important; }
+
+  /* card internals */
+  .box.cnaBox .workloadPill, .box.cnaBox .pill{
+    padding:1px 6px !important;
+    font-size:9px !important;
+  }
+  .box.cnaBox h3{ margin:1px 0 3px 0 !important; font-size:11px !important; }
+  .box.cnaBox h4{ margin:1px 0 3px 0 !important; font-size:10px !important; }
+  .box.cnaBox p{ margin:0.5px 0 !important; }
+
+  /* force page 2 */
+  .box.cnaBox:nth-of-type(7){
+    break-before:page !important;
+    page-break-before:always !important;
+  }
+
+  /* avoid Safari clipping of rounded boxes */
+  .box.cnaBox{ box-shadow:none !important; }
+
+  *{ overflow:visible !important; }
+}
+</style>
+
 </head>
 <body>
   <div class="topbar">
