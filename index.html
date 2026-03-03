@@ -193,9 +193,8 @@
     .editGrid{ display:grid; grid-template-columns: 145px 1fr; gap:10px; align-items:start; }
     .roomList{
       border:1px solid rgba(15,23,42,.10);
-      border-radius:14px;
-      overflow: visible;
-      background:#fff;
+      border-radius:14px; overflow:hidden; background:#fff;
+      max-height: 380px;
     }
     .roomListHead{
       padding:10px; font-size:12px; color:var(--muted);
@@ -203,13 +202,7 @@
       background:#fbfcff;
       position:sticky; top:0; z-index:3;
     }
-    .roomListScroll{
-      height: min(60dvh, 520px);
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      touch-action: pan-y;
-    }
+    .roomListScroll{ max-height: 340px; overflow:auto; }
     .roomBtn{
       width:100%;
       text-align:left;
@@ -375,6 +368,40 @@
       body.print-one-per .box.cnaBox{ break-after: page; page-break-after: always; }
       body.print-one-per .box.cnaBox:last-of-type{ break-after:auto; page-break-after:auto; }
     }
+
+    /* === PRINT: One-page fit + cleaner CNA layout === */
+    @media print{
+      @page{ margin: 8mm; }
+      /* Slightly scale down so most shifts fit on one page */
+      html{ -webkit-text-size-adjust: 100%; }
+      body{ font-size: 11px !important; zoom: 0.92; }
+
+      /* Two-column CNA cards when NOT printing one-per-page */
+      body:not(.print-one-per) #assignments{
+        display:grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        align-items:start;
+      }
+
+      /* Cleaner CNA cards */
+      .box.cnaBox{
+        padding: 10px !important;
+        border-radius: 12px !important;
+        border: 1px solid #000 !important;
+      }
+      .boxHead{ gap:8px !important; }
+      .boxHead h3{ font-size: 12px !important; }
+      .tag{ font-size: 10px !important; padding: 4px 7px !important; }
+      .rows{ gap: 5px !important; margin-top: 6px !important; }
+      .run{ font-size: 10px !important; }
+      .line{ font-size: 11px !important; }
+      .line small{ font-size: 10px !important; }
+
+      /* Prevent awkward breaks */
+      #assignments, .box, #printHeader{ break-inside: avoid; page-break-inside: avoid; }
+    }
+
 
     /* Error banner */
     .err{
@@ -542,19 +569,28 @@
       /* Reduce heavy shadows on mobile to feel snappier */
       .card{ box-shadow: 0 6px 14px rgba(2,6,23,.10) !important; }
       /* Make room list show more items */
-      .roomListScroll{
-      height: min(60dvh, 520px);
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      touch-action: pan-y;
-    }
+      .roomListScroll{ max-height: 65vh !important; -webkit-overflow-scrolling: touch; }
       /* Keep the chips row compact */
       .statsWrap{ gap: 6px !important; }
       .statChip{ padding: 6px 10px !important; font-size: 12px !important; }
     }
 
   
+
+    /* ===== iOS speed-ups (mobile) ===== */
+    @media (max-width: 760px){
+      /* Blur/backdrop-filter is expensive on iOS Safari */
+      .topbar{
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(11,18,32,.92) !important;
+      }
+      /* Reduce heavy shadows further for smoother scrolling */
+      .panel{ box-shadow: 0 6px 14px rgba(2,6,23,.10) !important; }
+      /* Safer scrolling on iOS */
+      .roomListScroll{ overflow-y:auto !important; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+    }
+
 /* Print logo: keep full mark visible */
 @media print{
   #printHeader .phLogo{ width:76px; height:76px; }
@@ -607,34 +643,19 @@
 }
 
 
-/* === PRINT: Make Room Range bold / underlined / uppercase (professional) === */
+/* === PRINT: Room Range (normal) === */
 @media print{
   .cnaRange, .cnaSummary.cnaRange{
-    font-weight: 800 !important;
-    text-decoration: underline !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.6px !important;
-    font-size: 13.5pt !important;
-    margin: 6px 0 8px 0 !important;
-    display: block !important;
-  }
-}
-
-
-/* === PRINT: Room Range (clean) === */
-@media print{
-  .cnaRange, .cnaSummary.cnaRange{
-    font-weight: 700 !important;
-    text-decoration: underline !important;
+    font-weight: normal !important;
+    text-decoration: none !important;
     text-transform: none !important;
-    letter-spacing: 0.2px !important;
+    letter-spacing: normal !important;
     font-size: 12pt !important;
     color: #000 !important;
     margin: 6px 0 8px 0 !important;
     display: block !important;
   }
 }
-
 
 /* === Mobile action bar (Generate / Shuffle / Print) === */
 .mobileActionBar{ display:none; }
@@ -697,68 +718,20 @@
 </style>
 
 <style>
-/* === Room Range Print Styling Enhancement === */
+/* === Room Range Print Styling Enhancement (disabled) === */
 @media print {
   .range,
   .room-range,
   .range-text,
   .roomRange,
   .rangeLabel {
-    font-weight: 700 !important;
-    text-decoration: underline !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.6px !important;
-  }
-}
-</style>
-
-
-<style id="printRangeAndColumnsFix">
-/* === Printout fixes: Room Range normal font + 2-column desktop print === */
-@media print{
-  /* Make "Room Range" match normal room line font (no bold, no underline) */
-  .cnaRange,
-  .cnaSummary.cnaRange,
-  .range,
-  .room-range,
-  .range-text,
-  .roomRange,
-  .rangeLabel{
-    font-weight: 400 !important;
+    font-weight: normal !important;
     text-decoration: none !important;
     text-transform: none !important;
-    letter-spacing: 0 !important;
-    font-size: 13px !important; /* matches .line font-size */
-    margin: 6px 0 8px 0 !important;
-    color: #000 !important;
+    letter-spacing: normal !important;
   }
 }
 
-/* Desktop print: two columns to reduce pages */
-@media print and (min-width: 900px){
-  /* Use columns in the print area */
-  #printArea{
-    column-count: 2;
-    column-gap: 12mm;
-    column-fill: auto;
-  }
-  /* Keep header full-width above both columns */
-  #printHeader{
-    column-span: all;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-  /* Each card should stay intact within a column */
-  #printArea .box{
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
-
-/* If user chooses "one-per-page", force single column */
-@media print{
-  body.print-one-per #printArea{ column-count: 1 !important; }
-}
 </style>
 
 </head>
@@ -889,13 +862,7 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
             <b>CNA Workload</b> = Occupied + Pending Admission.<br/>
             Beds marked <b>On Observation</b> do not count toward CNA workload.
           </div>
-          <div class="legend" aria-hidden="true">
-            <div class="lg"><span class="dot occ"></span> Occupied</div>
-            <div class="lg"><span class="dot obs"></span> On Observation</div>
-            <div class="lg"><span class="dot adm"></span> Pending Admission</div>
-            <div class="lg"><span class="dot hosp"></span> Out to Hospital</div>
-            <div class="lg"><span class="dot empty"></span> Empty</div>
-          </div>
+          
         </div>
 
         <div>
@@ -1051,6 +1018,14 @@ RAD8A/cpgApJYrk889iTimMJBnAzjuBjk+pJ/QVYZXLDYQSTkjrn0Ptn/ABqJ2dCXY88n5hkd+g7/AOf
             <div class="cardHead">
               <h2>Edit census (tap a room)</h2>
               <div class="sub">Use the room list to edit one room at a time. Fast + clean.</div>
+<div class="legend">
+            <div class="lg"><span class="dot occ"></span> Occupied</div>
+            <div class="lg"><span class="dot obs"></span> On Observation</div>
+            <div class="lg"><span class="dot adm"></span> Pending Admission</div>
+            <div class="lg"><span class="dot hosp"></span> Out to Hospital</div>
+            <div class="lg"><span class="dot empty"></span> Empty</div>
+          </div>
+
               <div class="sub">Legend: <b>OBS</b> = On Observation (does not count toward CNA workload). <b>ADM</b> = Pending Admission (counts toward workload; not census).</div>
             </div>
 
@@ -3602,10 +3577,23 @@ get("generate").addEventListener("click", function(){ doGenerate(false); });
     mGen.addEventListener('click', function(){ gen.click(); });
     mSh.addEventListener('click', function(){ sh.click(); });
     mPr.addEventListener('click', function(){ pr.click(); });
-    // keep state synced (after generate enables shuffle/print)
-    setInterval(syncMobileButtons, 300);
-    syncMobileButtons();
+    // Sync mobile buttons without a polling interval (better iOS performance)
+function watchDisabled(srcBtn, mobileBtn){
+  if(!srcBtn || !mobileBtn) return;
+  var apply = function(){ mobileBtn.disabled = !!srcBtn.disabled; };
+  apply();
+  try{
+    var mo = new MutationObserver(apply);
+    mo.observe(srcBtn, { attributes:true, attributeFilter:['disabled'] });
+  }catch(e){
+    // Fallback
+    srcBtn.addEventListener('click', function(){ setTimeout(apply, 0); });
   }
+}
+watchDisabled(sh, mSh);
+watchDisabled(pr, mPr);
+syncMobileButtons();
+}
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', wire);
   }else{
