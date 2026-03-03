@@ -712,6 +712,55 @@
 }
 </style>
 
+
+<style id="printRangeAndColumnsFix">
+/* === Printout fixes: Room Range normal font + 2-column desktop print === */
+@media print{
+  /* Make "Room Range" match normal room line font (no bold, no underline) */
+  .cnaRange,
+  .cnaSummary.cnaRange,
+  .range,
+  .room-range,
+  .range-text,
+  .roomRange,
+  .rangeLabel{
+    font-weight: 400 !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-size: 13px !important; /* matches .line font-size */
+    margin: 6px 0 8px 0 !important;
+    color: #000 !important;
+  }
+}
+
+/* Desktop print: two columns to reduce pages */
+@media print and (min-width: 900px){
+  /* Use columns in the print area */
+  #printArea{
+    column-count: 2;
+    column-gap: 12mm;
+    column-fill: auto;
+  }
+  /* Keep header full-width above both columns */
+  #printHeader{
+    column-span: all;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* Each card should stay intact within a column */
+  #printArea .box{
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* If user chooses "one-per-page", force single column */
+@media print{
+  body.print-one-per #printArea{ column-count: 1 !important; }
+}
+</style>
+
 </head>
 <body>
   <div class="topbar">
