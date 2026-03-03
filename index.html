@@ -369,20 +369,49 @@
       body.print-one-per .box.cnaBox:last-of-type{ break-after:auto; page-break-after:auto; }
     }
 
-    /* === PRINT: One-page fit + cleaner CNA layout === */
-    @media print{
-      @page{ margin: 8mm; }
-      /* Slightly scale down so most shifts fit on one page */
-      html{ -webkit-text-size-adjust: 100%; }
-      body{ font-size: 11px !important; zoom: 0.92; }
+    /* === PRINT: Simple single-column (no cut-off) === */
+@media print{
+  /* Comfortable margins for both desktop printers + iOS Safari */
+  @page{ margin: 12mm; }
 
-      /* Two-column CNA cards when NOT printing one-per-page */
-      body:not(.print-one-per) #assignments{
-        display:grid !important;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        align-items:start;
-      }
+  /* No zoom scaling (zoom often causes Safari cut-offs) */
+  html{ -webkit-text-size-adjust: 100%; }
+  body{
+    font-size: 12px !important;
+    zoom: 1 !important;
+  }
+
+  /* Force single-column layout */
+  #assignments{
+    display:block !important;
+  }
+
+  /* CNA cards: keep together, never clip */
+  .box.cnaBox{
+    margin: 0 0 10px 0 !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    border: 1px solid #000 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Text sizing */
+  .boxHead{ gap:8px !important; }
+  .boxHead h3{ font-size: 12px !important; }
+  .tag{ font-size: 10px !important; padding: 4px 7px !important; }
+  .rows{ gap: 5px !important; margin-top: 6px !important; }
+  .run{ font-size: 10px !important; }
+  .line{ font-size: 11px !important; }
+  .line small{ font-size: 10px !important; }
+
+  /* Safety: remove any overflow clipping in print */
+  .wrap, .panel, .main, #app, #printRoot, #printPaper{
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+}
 
       /* Cleaner CNA cards */
       .box.cnaBox{
