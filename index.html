@@ -763,6 +763,108 @@
 
 </style>
 
+
+<style>
+/* =========================
+   UNIVERSAL PRINT LAYOUT FIX
+   (Desktop + Mobile Safe)
+========================= */
+@media print{
+
+  @page{
+    margin:12mm;
+  }
+
+  html{
+    -webkit-text-size-adjust:100%;
+  }
+
+  body{
+    background:#fff !important;
+    color:#000 !important;
+    font-size:12px !important;
+    zoom:1 !important;
+  }
+
+  /* Hide UI */
+  .topbar,
+  .controls,
+  .leftCol,
+  .copyBar,
+  .tiny,
+  .toast,
+  .mobileActionBar{
+    display:none !important;
+  }
+
+  .wrap,
+  .panel,
+  .main{
+    padding:0 !important;
+    margin:0 !important;
+    background:#fff !important;
+    box-shadow:none !important;
+    border:none !important;
+  }
+
+  /* ---- HEADER ---- */
+  #printHeader{
+    display:block !important;
+    break-inside:avoid;
+    page-break-inside:avoid;
+    margin-bottom:10px;
+  }
+
+  /* Allow assignments to flow normally */
+  #assignments{
+    display:block !important;
+    break-inside:auto !important;
+    page-break-inside:auto !important;
+  }
+
+  /* Each CNA box stays together */
+  .box.cnaBox{
+    border:1px solid #000 !important;
+    border-radius:12px !important;
+    padding:10px !important;
+    margin-bottom:10px !important;
+
+    break-inside:avoid !important;
+    page-break-inside:avoid !important;
+  }
+
+  /* Prevent flex/grid print bugs (Chrome desktop fix) */
+  .rightWrap{
+    display:block !important;
+  }
+
+  /* Remove ALL overflow clipping */
+  .wrap,
+  .panel,
+  .main,
+  .scroll,
+  .card,
+  .rightWrap,
+  #printArea,
+  #app,
+  #printRoot,
+  #printPaper{
+    overflow:visible !important;
+    height:auto !important;
+    max-height:none !important;
+  }
+
+  /* Typography tuning */
+  .boxHead h3{ font-size:12px !important; }
+  .tag{ font-size:10px !important; padding:4px 7px !important; }
+  .rows{ gap:5px !important; }
+  .run{ font-size:10px !important; }
+  .line{ font-size:11px !important; }
+  .line small{ font-size:10px !important; }
+
+}
+</style>
+
 </head>
 <body>
   <div class="topbar">
