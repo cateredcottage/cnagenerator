@@ -31,6 +31,9 @@ textarea:focus-visible{outline:3px solid #72a8ec;outline-offset:3px}
 .automatic-balancing{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--line);border-radius:7px;background:var(--blue-soft);font-size:11px}.automatic-balancing span{color:var(--green);font-weight:600;white-space:nowrap}
 
 .secondary-actions{grid-template-columns:1fr}
+.shift-mode-field{min-width:215px}.shift-mode-field .helper{font-size:10px;margin-top:6px;max-width:300px}.shift-fields{align-items:flex-start;flex-wrap:wrap}.shift-fields>div{min-width:150px}.shift-heading{min-width:190px}.shift-toolbar{align-items:flex-start}
+@media(max-width:1180px){.shift-fields{flex-basis:100%;order:3}.shift-fields>.shift-mode-field{max-width:none;flex:1.25}}
+@media(max-width:600px){.shift-fields>.shift-mode-field{flex-basis:100%;min-width:0}.shift-fields>div:not(.shift-mode-field){min-width:0;flex:1}.shift-fields{order:0}.backup-actions{order:1}.shift-mode-field .helper{max-width:none}}
 
 </style>
   <style media="print">
@@ -64,7 +67,7 @@ body{background:#fff;color:#111;font-family:Arial,sans-serif;font-size:12px;line
   <main class="app-shell">
     <section class="shift-toolbar" aria-label="Shift information">
       <div class="shift-heading"><span class="eyebrow">SHIFT WORKSPACE</span><h2>Daily care assignments</h2></div>
-      <div class="shift-fields"><div><label for="printDate">Assignment date</label><input id="printDate" type="date"></div><div><label for="printShift">Scheduled shift</label><select id="printShift"><option value="Day (7am-3pm)">Day · 7:00 AM–3:00 PM</option><option value="Evening (3pm-11pm)">Evening · 3:00 PM–11:00 PM</option><option value="Night (11pm-7am)">Night · 11:00 PM–7:00 AM</option></select></div></div>
+      <div class="shift-fields"><div class="shift-mode-field"><label for="shiftSelectionMode">Shift preparation</label><select id="shiftSelectionMode"><option value="auto3">Automatic · 3 hours before</option><option value="auto2">Automatic · 2 hours before</option><option value="manual">Manual selection</option></select><p id="shiftSelectionHelp" class="helper" role="status"></p></div><div><label for="printDate">Assignment date</label><input id="printDate" type="date"></div><div><label for="printShift">Scheduled shift</label><select id="printShift"><option value="Day (7am-3pm)">Day · 7:00 AM–3:00 PM</option><option value="Evening (3pm-11pm)">Evening · 3:00 PM–11:00 PM</option><option value="Night (11pm-7am)">Night · 11:00 PM–7:00 AM</option></select></div></div>
       <div class="backup-actions"><button id="exportBackup" class="text-button">Export backup</button><label class="import-button text-button" for="importBackup" tabindex="0" role="button">Import backup</label><input id="importBackup" type="file" accept=".json,application/json" hidden></div>
     </section>
 
@@ -275,7 +278,7 @@ body{background:#fff;color:#111;font-family:Arial,sans-serif;font-size:12px;line
   var generatedSignature = null;
   var generatedAt = null;
   function assignmentSignature(){
-    return JSON.stringify([ALL_BEDS.map(function(b){return [bedStatus[b],bedObsGroup[b]];}),get("cnaCount").value,lightRules, randomizeTotals]);
+    return JSON.stringify([ALL_BEDS.map(function(b){return [bedStatus[b],bedObsGroup[b]];}),get("cnaCount").value,lightRules, randomizeTotals,get("printDate").value,get("printShift").value]);
   }
   function invalidateIfChanged(){
     if (!lastAssignments || !generatedSignature || generatedSignature === assignmentSignature()) return;
@@ -431,6 +434,7 @@ function saveState(){
         filterMode: (get("filterMode") && get("filterMode").value) ? get("filterMode").value : "all",
         printDate: (get("printDate") && get("printDate").value) ? get("printDate").value : "",
         printShift: (get("printShift") && get("printShift").value) ? get("printShift").value : "Day",
+        shiftSelectionMode: get("shiftSelectionMode").value,
         onePerPage: !!(get("onePerPage") && get("onePerPage").checked),
         copyIncludeObs: !!(get("copyIncludeObs") && get("copyIncludeObs").checked),
         copyPageBreaks: !!(get("copyPageBreaks") && get("copyPageBreaks").checked),
@@ -1093,6 +1097,28 @@ function saveState(){
     });
   }
 
+  function resolvePreparedShift(now, leadHours){
+    var minutes=now.getHours()*60+now.getMinutes(), lead=leadHours*60;
+    var dayStart=7*60-lead, eveningStart=15*60-lead, nightStart=23*60-lead;
+    var date=new Date(now.getFullYear(),now.getMonth(),now.getDate()), shift;
+    if(minutes<dayStart){date.setDate(date.getDate()-1);shift="Night (11pm-7am)";}
+    else if(minutes<eveningStart)shift="Day (7am-3pm)";
+    else if(minutes<nightStart)shift="Evening (3pm-11pm)";
+    else shift="Night (11pm-7am)";
+    return {date:date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0"),shift:shift};
+  }
+  function refreshShiftSelection(persist){
+    var mode=get("shiftSelectionMode").value;
+    get("shiftSelectionHelp").textContent=mode==="manual"?"Manual date and shift. Switch to Automatic to follow your device's local time.":"Prepares the upcoming shift "+(mode==="auto2"?"2":"3")+" hours early using your device's local time. Change the date or shift to choose manually.";
+    if(mode==="manual")return;
+    var plan=resolvePreparedShift(new Date(),mode==="auto2"?2:3);
+    var changed=get("printDate").value!==plan.date || get("printShift").value!==plan.shift;
+    if(!changed)return;
+    var hadAssignments=!!lastAssignments;
+    get("printDate").value=plan.date;get("printShift").value=plan.shift;
+    if(persist){saveState();updatePrintHeaderMeta();if(hadAssignments)toast("Shift preparation updated. Generate assignments for the new shift.");}
+  }
+
   function setDefaultDateIfEmpty(){
     var d = get("printDate");
     if (!d.value){
@@ -1286,6 +1312,7 @@ function saveState(){
   }
 
   function doGenerate(){
+    refreshShiftSelection(false);
     var cnaCount = parseInt(get("cnaCount").value || "7", 10);
     if (isNaN(cnaCount)) cnaCount = 7;
     cnaCount = Math.max(1, Math.min(30, cnaCount));
@@ -1816,6 +1843,8 @@ function computeTargetsWithAdjust(total,n,adjustments){
 
 get("generate").addEventListener("click", function(){ doGenerate(); });
   get("printBtn").addEventListener("click", function(){
+    refreshShiftSelection(true);
+    if(!lastAssignments){toast("The prepared shift changed. Generate assignments before printing.");return;}
     updatePrintHeaderMeta(); syncOnePerPage(); window.print();
   });
 
@@ -1835,8 +1864,13 @@ get("generate").addEventListener("click", function(){ doGenerate(); });
   });
   get("cnaCount").addEventListener("change", function(){ get("cnaCount").value = Math.max(1, Math.min(30, parseInt(get("cnaCount").value,10) || 1)); renderCnaNames(); renderLightLoad(); saveState(); updateChips(); });
 
-  get("printDate").addEventListener("change", saveState);
-  get("printShift").addEventListener("change", saveState);
+  function manualShiftChange(){
+    get("shiftSelectionMode").value="manual";
+    refreshShiftSelection(false);saveState();updatePrintHeaderMeta();
+  }
+  get("printDate").addEventListener("change", manualShiftChange);
+  get("printShift").addEventListener("change", manualShiftChange);
+  get("shiftSelectionMode").addEventListener("change",function(){refreshShiftSelection(false);saveState();updatePrintHeaderMeta();});
   get("onePerPage").addEventListener("change", function(){ syncOnePerPage(); saveState(); });
   get("printRoomList").addEventListener("change", function(){
     if (lastAssignments){ renderAssignments(lastAssignments, lastLabels, lastNote); renderObsSummary(); }
@@ -1874,6 +1908,8 @@ get("generate").addEventListener("click", function(){ doGenerate(); });
     if (saved && saved.printDate) get("printDate").value = saved.printDate;
     setDefaultDateIfEmpty();
     if (saved && saved.printShift) get("printShift").value = saved.printShift;
+    if(saved && ["auto3","auto2","manual"].indexOf(saved.shiftSelectionMode)>=0)get("shiftSelectionMode").value=saved.shiftSelectionMode;
+    refreshShiftSelection(false);
 
     if (saved && typeof saved.onePerPage === "boolean") get("onePerPage").checked = saved.onePerPage;
     syncOnePerPage();
@@ -1918,6 +1954,9 @@ get("generate").addEventListener("click", function(){ doGenerate(); });
     renderRoomEditor();
     updateChips();
     pushHistory();
+    setInterval(function(){refreshShiftSelection(true);},60000);
+    window.addEventListener("focus",function(){refreshShiftSelection(true);});
+    document.addEventListener("visibilitychange",function(){if(!document.hidden)refreshShiftSelection(true);});
 
   }catch(e){
     showError("Initialization failed: " + e.message + ". Try refreshing or use the reset instructions.");
