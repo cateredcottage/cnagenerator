@@ -31,9 +31,18 @@ textarea:focus-visible{outline:3px solid #72a8ec;outline-offset:3px}
 .automatic-balancing{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--line);border-radius:7px;background:var(--blue-soft);font-size:11px}.automatic-balancing span{color:var(--green);font-weight:600;white-space:nowrap}
 
 .secondary-actions{grid-template-columns:1fr}
-.shift-mode-field{min-width:215px}.shift-mode-field .helper{font-size:10px;margin-top:6px;max-width:300px}.shift-fields{align-items:flex-start;flex-wrap:wrap}.shift-fields>div{min-width:150px}.shift-heading{min-width:190px}.shift-toolbar{align-items:flex-start}
-@media(max-width:1180px){.shift-fields{flex-basis:100%;order:3}.shift-fields>.shift-mode-field{max-width:none;flex:1.25}}
-@media(max-width:600px){.shift-fields{display:grid;grid-template-columns:minmax(0,1fr);width:100%;min-width:0;order:0}.shift-fields>div{width:100%;min-width:0;max-width:none}.shift-fields input,.shift-fields select{display:block;width:100%;min-width:0;max-width:100%;height:48px;min-height:48px;box-sizing:border-box;line-height:normal;text-align:left}.shift-fields input[type=date]{-webkit-appearance:none;appearance:none}.shift-fields input[type=date]::-webkit-date-and-time-value{text-align:left}.shift-fields label{font-size:12px;margin-bottom:6px}.backup-actions{order:1}.shift-mode-field .helper{max-width:none;font-size:11px}}
+/* One sizing model for shift controls across desktop, tablet and phone. */
+.shift-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"heading backup" "fields fields";align-items:start;gap:18px}
+.shift-heading{grid-area:heading;min-width:0;width:auto}
+.backup-actions{grid-area:backup;margin:0;align-self:start}
+.shift-fields{grid-area:fields;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0;width:100%;order:0}
+.shift-fields>div,.shift-fields>.shift-mode-field{min-width:0;width:100%;max-width:none}
+.shift-fields input,.shift-fields select{display:block;width:100%;min-width:0;max-width:100%;height:48px;min-height:48px;box-sizing:border-box;font-size:16px;padding:10px 12px;line-height:normal;text-align:left}
+.shift-fields input[type=date]{-webkit-appearance:none;appearance:none}
+.shift-fields input[type=date]::-webkit-date-and-time-value{text-align:left}
+.shift-fields label{font-size:12px;margin-bottom:6px}
+.shift-mode-field .helper{font-size:12px;margin-top:6px;max-width:none}
+@media(max-width:800px){.shift-toolbar{grid-template-columns:minmax(0,1fr);grid-template-areas:"heading" "fields" "backup"}.shift-fields{grid-template-columns:minmax(0,1fr);gap:14px}.backup-actions{width:100%;justify-content:flex-end;border-top:1px solid var(--line);padding-top:4px}}
 
 .shift-status{font-size:12px;color:var(--muted);margin-top:6px}.shift-pending{margin:0 0 18px;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--blue-soft)}.shift-pending p{margin-bottom:10px}.shift-pending button{margin:0 6px 4px 0}
 
@@ -58,7 +67,7 @@ textarea:focus-visible{outline:3px solid #72a8ec;outline-offset:3px}
   .cnaDetails{gap:7px}
   .cnaDetails .line{font-size:13px;line-height:1.65;overflow-wrap:anywhere}
   .cnaDetails .line small{font-size:11px}
-  .announcements-panel{margin:24px 0 0}
+  .announcements-panel{margin:0 0 24px}
   .announcement-summary{cursor:pointer;list-style:none;border-bottom:0;gap:12px}
   .announcement-summary::-webkit-details-marker{display:none}
   .announcement-summary h2{font-size:16px}
@@ -84,7 +93,7 @@ textarea:focus-visible{outline:3px solid #72a8ec;outline-offset:3px}
     .announcement-summary .heading-icon,.announcement-summary .eyebrow{display:none}
     .announcement-summary>div{flex:1;min-width:140px}
     .notice-count{padding:4px 7px}
-    .announcements-panel{margin-top:18px}
+    .announcements-panel{margin:0 0 18px}
   }
 }
 
@@ -125,7 +134,23 @@ body{background:#fff;color:#111;font-family:Arial,sans-serif;font-size:12px;line
     </section>
 
     <div id="shiftPending" class="shift-pending" hidden><p id="shiftPendingText" role="status"></p><button id="applyPendingShift" type="button">Switch to next shift</button><button id="keepCurrentShift" type="button">Keep current shift</button></div>
-      <section class="census-overview" aria-label="Current census summary" aria-live="polite">
+      <details id="announcementsPanel" class="workspace-panel announcements-panel" aria-labelledby="announcementHeading">
+      <summary class="panel-heading announcement-summary"><div class="heading-icon" aria-hidden="true">✦</div><div><span class="eyebrow">STAFF COMMUNICATION</span><h2 id="announcementHeading">Announcements &amp; reminders</h2></div><span id="announcementCount" class="notice-count">0 notices</span><span class="notice-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="panel-content"><div class="announcement-compose"><button id="newAnnouncement" class="announcement-new" type="button">Write a notice</button></div>
+        <div id="announcementList" class="announcement-list"></div>
+        <p id="announcementEmpty" class="helper">Add a holiday message, staffing reminder, or team appreciation note.</p>
+        <p class="helper notice-storage">Notices are saved in this browser. Export a backup to transfer them to another device.</p>
+        <form id="announcementForm" class="announcement-form" hidden>
+          <h3 id="announcementFormTitle">New announcement</h3>
+          <div class="notice-fields"><div><label for="noticeCategory">Notice type</label><select id="noticeCategory"><option value="General">General</option><option value="Holiday">Holiday</option><option value="Staffing">Staffing</option><option value="Reminder">Reminder</option><option value="Appreciation">Appreciation</option></select></div><div><label for="noticeTemplate">Suggested message</label><select id="noticeTemplate"><option value="">Write your own</option><option value="holiday">Holiday scheduling</option><option value="celebration">Holiday celebration</option><option value="handoff">Shift handoff reminder</option><option value="appreciation">Thank you to our team</option></select></div></div>
+          <label for="noticeTitle">Title</label><input id="noticeTitle" maxlength="100" required placeholder="Upcoming holiday staffing">
+          <label for="noticeMessage">Message</label><textarea id="noticeMessage" maxlength="2000" rows="4" required placeholder="Write your message for the team..."></textarea>
+          <label class="check-label"><input id="noticePrint" type="checkbox"><span>Include this notice on assignment printouts</span></label>
+          <div class="btnrow"><button id="publishAnnouncement" class="primary" type="submit">Post notice</button><button id="cancelAnnouncement" type="button">Cancel</button><span id="noticeFeedback" role="status"></span></div>
+        </form>
+      </div>
+    </details>
+    <section class="census-overview" aria-label="Current census summary" aria-live="polite">
       <div class="metric metric-primary"><span class="metric-label">Resident census</span><strong id="chipCensus">0</strong><span class="metric-note">Occupied + Observation</span></div>
       <div class="metric"><span class="metric-label">CNA assignment load</span><strong id="chipWorkload">0</strong><span class="metric-note">Occupied + Expected Admission</span></div>
       <button class="metric metric-filter" id="chipOBSWrap" type="button" aria-label="Filter rooms with residents under Observation"><span class="metric-label"><i class="status-dot obs" aria-hidden="true"></i><b>OBS</b> Under Observation</span><strong id="chipObs">0</strong><span class="metric-note">Separate staff assignment</span></button>
@@ -166,22 +191,7 @@ body{background:#fff;color:#111;font-family:Arial,sans-serif;font-size:12px;line
         <div class="handoff-lists"><section class="observation-panel"><div class="sectionTitle"><span>PSA assignments</span><div class="copyBar"><button id="copyObsBtn" disabled>Copy list</button></div></div><div id="obsSummary"><p class="helper">Generate assignments to prepare the PSA assignment list.</p></div></section><section class="hospital-panel"><div class="sectionTitle"><span>Hospitalized residents</span><div class="copyBar"><button id="copyHospBtn" disabled>Copy list</button></div></div><div id="hospList"><p class="helper">Resident bed identifiers appear here.</p></div></section></div>
       </div>
     </section>
-    <details id="announcementsPanel" class="workspace-panel announcements-panel" aria-labelledby="announcementHeading">
-      <summary class="panel-heading announcement-summary"><div class="heading-icon" aria-hidden="true">✦</div><div><span class="eyebrow">STAFF COMMUNICATION</span><h2 id="announcementHeading">Announcements &amp; reminders</h2></div><span id="announcementCount" class="notice-count">0 notices</span><span class="notice-chevron" aria-hidden="true">⌄</span></summary>
-      <div class="panel-content"><div class="announcement-compose"><button id="newAnnouncement" class="announcement-new" type="button">Write a notice</button></div>
-        <div id="announcementList" class="announcement-list"></div>
-        <p id="announcementEmpty" class="helper">Add a holiday message, staffing reminder, or team appreciation note.</p>
-        <p class="helper notice-storage">Notices are saved in this browser. Export a backup to transfer them to another device.</p>
-        <form id="announcementForm" class="announcement-form" hidden>
-          <h3 id="announcementFormTitle">New announcement</h3>
-          <div class="notice-fields"><div><label for="noticeCategory">Notice type</label><select id="noticeCategory"><option value="General">General</option><option value="Holiday">Holiday</option><option value="Staffing">Staffing</option><option value="Reminder">Reminder</option><option value="Appreciation">Appreciation</option></select></div><div><label for="noticeTemplate">Suggested message</label><select id="noticeTemplate"><option value="">Write your own</option><option value="holiday">Holiday scheduling</option><option value="celebration">Holiday celebration</option><option value="handoff">Shift handoff reminder</option><option value="appreciation">Thank you to our team</option></select></div></div>
-          <label for="noticeTitle">Title</label><input id="noticeTitle" maxlength="100" required placeholder="Upcoming holiday staffing">
-          <label for="noticeMessage">Message</label><textarea id="noticeMessage" maxlength="2000" rows="4" required placeholder="Write your message for the team..."></textarea>
-          <label class="check-label"><input id="noticePrint" type="checkbox"><span>Include this notice on assignment printouts</span></label>
-          <div class="btnrow"><button id="publishAnnouncement" class="primary" type="submit">Post notice</button><button id="cancelAnnouncement" type="button">Cancel</button><span id="noticeFeedback" role="status"></span></div>
-        </form>
-      </div>
-    </details>
+
   </main>
   <footer class="footerCredit"><span>Catered Cottage Healthcare · Nursing Services</span><span>Built &amp; maintained by <strong>Arnold Deveney</strong></span></footer>
 
@@ -2159,6 +2169,7 @@ document.addEventListener('keydown',function(event){
   function render(){
     var list=el('announcementList'),printed=el('printedAnnouncements');list.replaceChildren();printed.replaceChildren();
     el('announcementEmpty').hidden=state.announcements.length>0;
+    if(state.announcements.length>0)el('announcementsPanel').open=true;
     el('announcementCount').textContent=state.announcements.length+' '+(state.announcements.length===1?'notice':'notices');
     state.announcements.forEach(function(notice){
       var article=document.createElement('article');article.className='announcement-card';
